@@ -1,33 +1,29 @@
-.env
-*.env
-
-/output/*
-!/output/.gitkeep
-
+# Python
 __pycache__/
 *.py[cod]
-*$py.class
+*.pyo
+.Python
+*.egg-info/
 
-*.so
+# Environment — NEVER commit API keys
+.env
+*.env
+!.env.example
 
+# Virtual environment
 venv/
-env/
-.env/
 .venv/
-myenv/
-pip-log.txt
-pip-delete-this-directory.txt
+env/
 
-.vscode/
+# Output / generated files
+output/
+*.md.bak
+
+# IDE
 .idea/
-*.swp
-*.swo
-*~
+.vscode/
+*.iml
 
+# OS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db

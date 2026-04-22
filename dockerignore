@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+*.env
+.env.*
+!.env.example
+
+# Dev / IDE
+.venv/
+venv/
+.idea/
+.vscode/
+*.iml
+
+# Output files (don't ship generated guides in image)
+output/
+*.md.bak
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore

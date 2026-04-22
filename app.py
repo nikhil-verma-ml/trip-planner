@@ -31,7 +31,7 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='frontend', static_url_path='')
 CORS(app)
 
 # ── Create output folder at startup ──────────────────────────────────────────
@@ -314,6 +314,12 @@ def list_jobs():
             "jobs":  {jid: {"status": j["status"], "created": j.get("created")}
                       for jid, j in jobs.items()},
         })
+
+
+@app.route("/", methods=["GET"])
+def index():
+    """Serve the frontend SPA."""
+    return app.send_static_file("index.html")
 
 
 @app.route("/api/health", methods=["GET"])

@@ -336,7 +336,27 @@ function parseSections(text){
   return map;
 }
 
-function estimateNights(d){if(!d)return'?';const m=d.match(/(\d+)/g);return(m&&m.length>=2)?parseInt(m[m.length-1])-parseInt(m[0])+1:7;}
+function estimateNights(d){
+  if(!d)return 7;
+  // Try to find two dates and diff them
+  // Format: "15 Sep 2025 – 22 Sep 2025" or "15-22 Sep" or "Sep 15 - Sep 22"
+  const months={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+  const parts=d.toLowerCase().split(/[–—\-to]+/).map(s=>s.trim()).filter(Boolean);
+  if(parts.length>=2){
+    function extractDay(s){const m=s.match(/\b(\d{1,2})\b/g);return m?parseInt(m[0]):null;}
+    const d1=extractDay(parts[0]);
+    const d2=extractDay(parts[parts.length-1]);
+    if(d1&&d2&&d2>d1)return d2-d1+1;
+    if(d1&&d2&&d2<d1)return(30-d1)+d2+1; // month wrap
+  }
+  // Fallback: look for two numbers
+  const nums=d.match(/\b(\d{1,2})\b/g);
+  if(nums&&nums.length>=2){
+    const a=parseInt(nums[0]),b=parseInt(nums[nums.length-1]);
+    if(b>a&&b-a<35)return b-a+1;
+  }
+  return 7;
+}
 
 function fillStats(s,data){
   const tk=s.tickets||'';const pm=tk.match(/(?:₹|inr)[^\d]*([\d,]+)/i);
@@ -351,22 +371,24 @@ function fillStats(s,data){
 
 /* ── Destination Research ── */
 function renderResearch(el,text){
-  const lines=text.split('\n').filter(l=>l.trim());
-  const attrLines=lines.filter(l=>/eiffel|louvre|notre|montmartre|arc|museum|cathedral|sacré|palace|garden|tower|bazaar/i.test(l)&&(l.includes('*')||l.includes('-')));
+  const lines=text.split('\n').map(l=>l.trim()).filter(l=>l.length>15);
+  const attrLines=lines.filter(l=>(l.startsWith('*')||l.startsWith('-'))&&!/^[*-]\s*(food|visa|transport|tip|hidden|2 local|3 dish)/i.test(l)&&l.length>20);
   let html='';
-  if(attrLines.length){
+  if(attrLines.length>=2){
     html+='<p style="font-size:.7rem;font-weight:500;text-transform:uppercase;letter-spacing:.1em;color:var(--mist);margin-bottom:.55rem">Top Attractions</p><div class="attr-grid">';
     attrLines.slice(0,6).forEach(l=>{
-      const clean=l.replace(/[\*\->#]+/g,'').trim();
-      const si=clean.search(/\s(is|—|-|,)\s/);
-      const name=si>0?clean.substring(0,si).trim():clean.substring(0,28);
-      const desc=si>0?clean.substring(si+3).trim():clean;
-      html+='<div class="attr-card"><h4>'+escHtml(name)+'</h4><p>'+escHtml(desc.substring(0,110))+'</p></div>';
+      const clean=l.replace(/^[\*\->\s]+/,'').trim();
+      const sepIdx=clean.search(/:\s|(?<=\w)\s-\s|(?<=\w)\s—\s|\sis\s(a|an)\s/);
+      let name,desc;
+      if(sepIdx>0&&sepIdx<50){name=clean.substring(0,sepIdx).trim().replace(/[:\-—]$/,'').trim();desc=clean.substring(sepIdx).replace(/^[\s:\-—]+/,'').trim();}
+      else{const ci=clean.indexOf(',');name=ci>0&&ci<40?clean.substring(0,ci).trim():clean.substring(0,35).trim();desc=ci>0&&ci<40?clean.substring(ci+1).trim():'';}
+      html+='<div class="attr-card"><h4>'+escHtml(name.substring(0,40))+'</h4>';
+      if(desc)html+='<p>'+escHtml(desc.substring(0,110))+'</p>';
+      html+='</div>';
     });
-    html+='</div><div style="margin-top:1rem">';
+    html+='</div>';
   }
-  html+='<div class="raw">'+mdToHtml(text)+'</div>';
-  if(attrLines.length)html+='</div>';
+  html+='<div class="raw" style="margin-top:'+(attrLines.length>=2?'1rem':'0')+'">'+mdToHtml(text)+'</div>';
   el.innerHTML=html;
 }
 
@@ -431,25 +453,111 @@ function renderHotels(el,text){
 
 /* ── Tickets ── */
 function renderTickets(el,text){
-  const lines=text.split('\n').filter(l=>l.trim());
-  const tl=lines.filter(l=>/(\d\.\s*|flight|airline|air india|air france|indigo|₹|inr)/i.test(l)&&l.length>15);
-  if(!tl.length){el.innerHTML='<div class="raw">'+mdToHtml(text)+'</div>';return;}
-  const bm=text.match(/best pick.*?:\s*([^\n.]+)/i);
-  const bestTxt=bm?bm[1].toLowerCase():'';
-  let html='<div class="ticket-grid">',shown=0;
-  tl.slice(0,5).forEach(line=>{
-    const pm=line.match(/(?:₹|INR)\s*([\d,]+)/i);
-    const dm=line.match(/(\d+(?:\.\d+)?)\s*(?:h|hour)/i);
-    const stm=line.match(/(\d+)\s*stop/i);
-    const am=line.match(/Air India|Air France|IndiGo|SpiceJet|Emirates|Qatar|Vistara|Budget/i);
-    const fm=line.match(/[A-Z]{2}\d+/);
-    const tim=line.match(/(\d{2}:\d{2})/g);
-    const isBest=bestTxt&&(am?bestTxt.includes(am[0].toLowerCase()):false);
-    if(!pm&&!dm)return;shown++;
-    html+='<div class="ticket-card'+(isBest?' best':'')+'"><div class="tc-airline">'+(am?am[0]:'Option '+shown)+(fm?' <span style="font-size:.73rem;color:var(--mist)">'+fm[0]+'</span>':'')+(isBest?'<span class="best-badge">Best</span>':'')+'</div><div class="tc-route">'+(tim&&tim[0]?'<span>'+tim[0]+'</span><span style="color:var(--teal)">→</span>'+(tim[1]?'<span>'+tim[1]+'</span>':''):'<span>DEL → CDG</span>')+'</div><div class="tc-meta"><div class="tc-price">'+(pm?'₹'+pm[1]:'—')+'</div>'+(dm?'<div class="tc-dur">⏱ '+dm[1]+'h</div>':'')+(stm?'<span class="tc-stops s'+stm[1]+'">'+(stm[1]==='0'?'Non-stop':stm[1]+' stop')+'</span>':'')+'</div></div>';
+  // Best pick line
+  const bm = text.match(/best pick.*?[:\-]\s*([^\n]+)/i);
+
+  // Parse numbered ticket lines: "1. Name | details | ₹price | Xh | dep→arr"
+  const allLines = text.split('\n').map(l=>l.trim()).filter(l=>l.length>8);
+  const entries = [];
+  allLines.forEach(line => {
+    if(!/^\d+[.)]/i.test(line)) return;          // must start with "1." or "1)"
+    const num = (line.match(/^(\d+)/)||[])[1];
+
+    // Extract price
+    const pm = line.match(/(?:₹|INR)\s*([\d,]+)/i);
+    // Duration
+    const dm = line.match(/(\d+(?:\.\d+)?)\s*(?:hours?|h(?:rs?)?)\b/i);
+    // Times
+    const tim = line.match(/\b(\d{1,2}:\d{2})\b/g);
+    // Train number (5-digit Indian train numbers)
+    const trainNum = (line.match(/\b([1-9]\d{4})\b/)||[])[1];
+    // Flight code e.g. AI-123, 6E234, AI 302
+    const flightCode = (line.match(/\b([A-Z]{2}|[0-9][A-Z])[- ]?(\d{2,4})\b/)||[]);
+    // Stops
+    const nonstop = /non.?stop|direct/i.test(line);
+    const stopsM = line.match(/(\d+)\s*stop/i);
+    // Class
+    const classM = (line.match(/\b(SL|3A|2A|1A|CC|EC)\b/i)||[])[0];
+    // Name: strip number prefix and trailing technical details
+    let name = line
+      .replace(/^\d+[.)]\s*/,'')
+      .replace(/[-–|].*$/,'')
+      .replace(/₹[\d,]+/gi,'')
+      .replace(/\d+h(ours?)?\b/gi,'')
+      .replace(/\b\d{5}\b/g,'')
+      .replace(/\b[A-Z]{2}[-\s]?\d{2,4}\b/g,'')
+      .replace(/(?:₹|INR|inr).*/gi,'')
+      .trim();
+    if(name.length > 45) name = name.substring(0,45).trim();
+
+    // Route from text e.g. "DEL to AYO" or "NDLS to AYJ"
+    const routeM = line.match(/\b([A-Z]{3,4})\s*(?:to|→|->)\s*([A-Z]{3,4})\b/i);
+
+    entries.push({
+      num, name: name||('Option '+num),
+      price: pm ? pm[1] : null,
+      duration: dm ? dm[1] : null,
+      times: tim||[],
+      trainNum: trainNum||null,
+      flightCode: flightCode[1] ? flightCode[1]+(flightCode[2]||'') : null,
+      stops: nonstop?'0': stopsM?stopsM[1]:null,
+      classInfo: classM||null,
+      route: routeM ? routeM[1].toUpperCase()+'→'+routeM[2].toUpperCase() : null,
+      raw: line,
+    });
   });
-  html+='</div>';
-  if(bm)html+='<p style="margin-top:.8rem;font-size:.82rem;color:var(--mist)">💡 <strong style="color:var(--ink)">Best Pick:</strong> '+escHtml(bm[1].trim())+'</p>';
+
+  if(!entries.length){el.innerHTML='<div class="raw">'+mdToHtml(text)+'</div>';return;}
+
+  const isTrainMode = entries.some(e=>e.trainNum||/express|rajdhani|shatabdi|mail|superfast/i.test(e.raw));
+  const bestTxt = bm ? bm[1].toLowerCase() : '';
+
+  let html='<div class="ticket-grid">';
+  entries.slice(0,4).forEach(e=>{
+    const isBest = bestTxt && (e.name ? bestTxt.includes(e.name.toLowerCase().substring(0,12)) : false);
+    const code   = e.flightCode || (e.trainNum ? '#'+e.trainNum : '');
+    const icon   = isTrainMode ? '🚆' : '✈';
+
+    html += '<div class="ticket-card'+(isBest?' best':'')+'"">';
+
+    // Line 1: icon + name + code + badge
+    html += '<div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">';
+    html += '<span style="font-size:1.1rem">'+icon+'</span>';
+    html += '<span style="font-weight:600;font-size:.88rem;color:var(--ink)">'+escHtml(e.name)+'</span>';
+    if(code) html += '<span style="font-size:.7rem;background:var(--warm);color:var(--mist);padding:.1rem .42rem;border-radius:4px">'+escHtml(code)+'</span>';
+    if(e.classInfo) html += '<span style="font-size:.7rem;background:#E6F1FB;color:#0C447C;padding:.1rem .42rem;border-radius:4px">'+escHtml(e.classInfo.toUpperCase())+'</span>';
+    if(isBest) html += '<span class="best-badge">✓ Best</span>';
+    html += '</div>';
+
+    // Line 2: time range OR route
+    html += '<div style="display:flex;align-items:center;gap:.5rem;margin-top:.35rem;font-size:.82rem;color:var(--mist)">';
+    if(e.times.length>=2){
+      html += '<span style="font-weight:500;color:var(--ink)">'+e.times[0]+'</span>';
+      html += '<span style="color:var(--teal)">→</span>';
+      html += '<span style="font-weight:500;color:var(--ink)">'+e.times[1]+'</span>';
+    } else if(e.route){
+      html += '<span>'+escHtml(e.route)+'</span>';
+    }
+    if(e.duration) html += '<span>⏱ '+e.duration+'h</span>';
+    if(e.stops!==null){
+      const sc = e.stops==='0'?'s0':'s1';
+      html += '<span class="tc-stops '+sc+'">'+(e.stops==='0'?'Non-stop':e.stops+' stop')+'</span>';
+    }
+    html += '</div>';
+
+    // Line 3: price
+    if(e.price){
+      html += '<div style="margin-top:.35rem"><span style="font-size:1rem;font-weight:700;color:var(--teal)">₹'+e.price+'</span></div>';
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+
+  if(bm){
+    html += '<div style="margin-top:.85rem;background:#F0FBF5;border:1px solid #B5DEC9;border-radius:6px;padding:.7rem 1rem;font-size:.83rem;line-height:1.6">';
+    html += '<strong style="color:var(--green)">💡 Best Pick:</strong> '+escHtml(bm[1].trim());
+    html += '</div>';
+  }
   el.innerHTML=html;
 }
 

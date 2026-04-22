@@ -1,8 +1,16 @@
+# ── Core web framework ────────────────────────────────────
+flask==3.0.3
+flask-cors==4.0.1
+gunicorn==22.0.0
+
+# ── CrewAI multi-agent framework ──────────────────────────
 crewai==0.80.0
 crewai-tools==0.14.0
+
+# ── LLM providers ─────────────────────────────────────────
 langchain-google-genai==2.0.7
+groq==0.13.0
+
+# ── Utilities ─────────────────────────────────────────────
 python-dotenv==1.0.1
 requests==2.31.0
-amadeus==9.0.0
-groq==0.13.0
- 
