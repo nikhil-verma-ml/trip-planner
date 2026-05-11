@@ -270,8 +270,8 @@ Interactive Swagger UI — test all endpoints directly in browser.
 
 ## 🚀 Deployed & Live
 
-[![Frontend](https://img.shields.io/badge/Frontend-Live_on_Vercel-000000?style=for-the-badge&logo=vercel)](https://your-app.vercel.app)
-[![Backend](https://img.shields.io/badge/Backend-Live_on_Render-46E3B7?style=for-the-badge&logo=render&logoColor=black)](https://your-backend.onrender.com/docs)
+[![Frontend](https://img.shields.io/badge/Frontend-Live_on_Vercel-000000?style=for-the-badge&logo=vercel)](https://trip-planner-nu-puce.vercel.app)
+[![Backend](https://img.shields.io/badge/Backend-Live_on_Render-46E3B7?style=for-the-badge&logo=render&logoColor=black)](https://trip-planner-backend-5v75.onrender.com/docs)
 
 ---
 
