@@ -1,29 +1,42 @@
+# Environment
+.env
+.env.*
+!.env.example
+!backend/.env.example
+!frontend/.env.example
+
 # Python
 __pycache__/
 *.py[cod]
-*.pyo
-.Python
-*.egg-info/
-
-# Environment — NEVER commit API keys
-.env
-*.env
-!.env.example
-
-# Virtual environment
-venv/
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .venv/
 env/
+venv/
+ENV/
+backend/venv/
+backend/.local/
+backend/.crewai_storage/
+backend/app/output/
+backend/output/
 
-# Output / generated files
-output/
-*.md.bak
+# Frontend / Node
+node_modules/
+dist/
+build/
+.vercel/
 
-# IDE
-.idea/
-.vscode/
-*.iml
+# Logs
+*.log
+*.err.log
+*.out.log
 
 # OS
 .DS_Store
 Thumbs.db
+
+# IDEs
+.vscode/
+.idea/

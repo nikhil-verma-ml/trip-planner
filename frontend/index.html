@@ -1,749 +1,121 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>VoyageAI — Intelligent Trip Planner</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --ink:#1A1612;--sand:#F5F0E8;--warm:#EDE5D5;--rust:#C2471A;
-  --teal:#1B4D5C;--mist:#6B7B7E;--line:rgba(26,22,18,.1);
-  --green:#2E7D5A;--gold:#B8860B;
-  --serif:'Cormorant Garamond',Georgia,serif;
-  --sans:'DM Sans',sans-serif;--r:6px;
-}
-html{scroll-behavior:smooth}
-body{font-family:var(--sans);background:var(--sand);color:var(--ink);min-height:100vh;overflow-x:hidden}
-header{background:var(--teal);padding:2.5rem 2rem 3.5rem;text-align:center;background-image:radial-gradient(ellipse 80% 50% at 50% 110%,rgba(184,134,11,.15) 0%,transparent 70%)}
-.eyebrow{font-size:.68rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:rgba(245,240,232,.5);margin-bottom:.8rem}
-header h1{font-family:var(--serif);font-size:clamp(2.8rem,7vw,5.5rem);font-weight:300;color:#F5F0E8;letter-spacing:-.02em;line-height:1}
-header h1 em{font-style:italic;color:#D4A847}
-header p{font-size:.9rem;color:rgba(245,240,232,.6);margin-top:.85rem;font-weight:300}
-.agent-strip{display:flex;justify-content:center;flex-wrap:wrap;gap:.4rem;margin-top:1.6rem}
-.agent-strip span{font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;padding:.28rem .75rem;border:1px solid rgba(245,240,232,.18);color:rgba(245,240,232,.5);border-radius:20px}
-main{max-width:920px;margin:0 auto;padding:2.5rem 1.5rem 6rem}
-section{margin-bottom:2.5rem}
-.section-title{font-family:var(--serif);font-size:1.5rem;font-weight:400;color:var(--teal);margin-bottom:1.25rem;padding-bottom:.5rem;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:.6rem}
-.section-title sup{font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--mist)}
-.ornament{text-align:center;color:var(--mist);letter-spacing:.5em;margin:2rem 0;opacity:.35;font-size:.9rem}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem}
-.form-grid .full{grid-column:1/-1}
-.field{display:flex;flex-direction:column;gap:.38rem}
-label{font-size:.7rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--mist)}
-input,select,textarea{font-family:var(--sans);font-size:.9rem;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:.6rem .8rem;outline:none;transition:border-color .18s,box-shadow .18s;width:100%}
-input:focus,select:focus,textarea:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(27,77,92,.07)}
-textarea{resize:vertical;min-height:64px}
-.mode-group{display:flex;gap:.45rem}
-.mode-btn{flex:1;padding:.6rem;border:1px solid var(--line);background:#fff;border-radius:var(--r);cursor:pointer;font-family:var(--sans);font-size:.82rem;color:var(--mist);transition:all .15s;text-align:center}
-.mode-btn.active{background:var(--teal);color:#F5F0E8;border-color:var(--teal);font-weight:500}
-.conditional{display:none}.conditional.show{display:block}
-.submit-wrap{text-align:center;margin-top:1.75rem}
-.btn-plan{font-family:var(--serif);font-size:1.2rem;font-weight:400;font-style:italic;color:#F5F0E8;background:var(--rust);border:none;padding:.85rem 2.8rem;border-radius:var(--r);cursor:pointer;transition:background .18s,transform .12s}
-.btn-plan:hover{background:#A83A12;transform:translateY(-1px)}
-.btn-plan:disabled{background:var(--mist);cursor:not-allowed;transform:none}
-#pipeline-section{display:none}
-#pipeline-section.show{display:block}
-.pipeline{display:flex;flex-direction:column;position:relative}
-.pipeline::before{content:'';position:absolute;left:18px;top:24px;bottom:24px;width:1px;background:var(--line)}
-.pipe-step{display:flex;align-items:flex-start;gap:1.1rem;padding:.85rem 0;opacity:.35;transition:opacity .4s}
-.pipe-step.active{opacity:1}.pipe-step.done{opacity:.7}
-.step-dot{width:36px;height:36px;border-radius:50%;background:var(--warm);border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.95rem;position:relative;z-index:1;transition:all .3s}
-.pipe-step.active .step-dot{background:var(--teal);border-color:var(--teal);box-shadow:0 0 0 5px rgba(27,77,92,.1);animation:pulse 1.5s infinite}
-.pipe-step.done .step-dot{background:var(--green);border-color:var(--green)}
-.dot-spinner{width:15px;height:15px;border:2px solid rgba(245,240,232,.3);border-top-color:#F5F0E8;border-radius:50%;animation:spin .7s linear infinite;display:none}
-.pipe-step.active .dot-spinner{display:block}.pipe-step.active .dot-emoji,.pipe-step.done .dot-emoji{display:none}
-.dot-check{display:none;color:#fff;font-size:.9rem}.pipe-step.done .dot-check{display:block!important}
-.step-info{flex:1;padding-top:.4rem}
-.step-name{font-size:.9rem;font-weight:500;color:var(--ink);margin-bottom:.15rem}
-.step-desc{font-size:.78rem;color:var(--mist);font-weight:300}
-.step-api{font-size:.68rem;margin-top:.25rem;color:var(--rust);font-weight:500;letter-spacing:.06em}
-.pipe-step.active .step-name{color:var(--teal)}.pipe-step.done .step-name{color:var(--green)}
-#output-section{display:none}#output-section.show{display:block}
-.guide-hero{background:linear-gradient(135deg,var(--teal) 0%,#2A6070 100%);border-radius:var(--r);padding:2rem;margin-bottom:1.75rem;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem}
-.guide-hero h2{font-family:var(--serif);font-size:2.2rem;font-weight:300;font-style:italic;color:#F5F0E8}
-.guide-hero p{font-size:.8rem;color:rgba(245,240,232,.6);margin-top:.4rem;font-weight:300}
-.guide-hero-actions{display:flex;gap:.6rem;flex-wrap:wrap}
-.guide-btn{font-size:.72rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;padding:.4rem 1rem;border-radius:var(--r);cursor:pointer;border:1px solid rgba(245,240,232,.25);background:rgba(245,240,232,.1);color:rgba(245,240,232,.75);transition:all .15s;text-decoration:none;display:inline-block;font-family:var(--sans)}
-.guide-btn:hover{background:rgba(245,240,232,.2);color:#F5F0E8}
-.guide-btn.primary{background:#F5F0E8;color:var(--teal);border-color:#F5F0E8}
-.guide-stats{display:flex;flex-wrap:wrap;gap:.6rem;margin-bottom:1.75rem}
-.stat-pill{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:.55rem 1rem;display:flex;align-items:center;gap:.5rem;flex:1;min-width:140px}
-.stat-pill .si{font-size:1.1rem;flex-shrink:0}
-.stat-pill .sv{font-weight:600;color:var(--ink);font-size:.88rem}
-.stat-pill .sl{color:var(--mist);font-size:.72rem}
-.guide-section{background:#fff;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:1.2rem}
-.gs-header{display:flex;align-items:center;gap:.75rem;padding:.9rem 1.25rem;border-bottom:1px solid var(--line);cursor:pointer;user-select:none;transition:background .15s}
-.gs-header:hover{background:#FAFAF8}
-.gs-icon{font-size:1rem;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.gs-title{font-family:var(--serif);font-size:1.15rem;font-weight:400;color:var(--ink);flex:1}
-.gs-toggle{font-size:.8rem;color:var(--mist);transition:transform .2s}
-.gs-body{padding:1.25rem}
-.gs-body.collapsed{display:none}
-.attr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:.7rem;margin-bottom:1rem}
-.attr-card{background:var(--warm);border-radius:var(--r);padding:.8rem;border-left:3px solid var(--teal)}
-.attr-card h4{font-size:.83rem;font-weight:600;color:var(--teal);margin-bottom:.25rem}
-.attr-card p{font-size:.77rem;color:var(--mist);line-height:1.5}
-.weather-table{width:100%;border-collapse:collapse;font-size:.83rem}
-.weather-table th{background:var(--warm);padding:.5rem .75rem;text-align:left;font-size:.7rem;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--mist)}
-.weather-table td{padding:.55rem .75rem;border-bottom:1px solid var(--line)}
-.weather-table tr:last-child td{border-bottom:none}
-.weather-table tr:hover td{background:#FAFAF8}
-.wbadge{font-size:.7rem;padding:.12rem .45rem;border-radius:20px;font-weight:500}
-.w-sun{background:#FEF3C7;color:#92400E}.w-rain{background:#DBEAFE;color:#1E40AF}.w-cloud{background:#F3F4F6;color:#374151}
-.pack-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:.4rem;margin-top:.75rem}
-.pack-item{display:flex;align-items:center;gap:.45rem;font-size:.81rem;padding:.32rem .5rem;background:var(--warm);border-radius:4px}
-.pack-item::before{content:'✓';color:var(--green);font-weight:700;font-size:.72rem}
-.hotel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:.85rem}
-.hotel-card{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:#fff;transition:box-shadow .18s}
-.hotel-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.07)}
-.hotel-card.rec{border-color:var(--teal);box-shadow:0 0 0 2px rgba(27,77,92,.1)}
-.hotel-head{padding:.8rem 1rem .55rem;border-bottom:1px solid var(--line)}
-.hotel-name{font-weight:600;font-size:.87rem;color:var(--ink)}
-.rec-badge{font-size:.62rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;background:var(--teal);color:#F5F0E8;padding:.12rem .45rem;border-radius:20px;margin-left:.4rem}
-.hotel-stars{color:#F59E0B;font-size:.73rem;margin-top:.2rem}
-.hotel-loc{font-size:.74rem;color:var(--mist);margin-top:.18rem}
-.hotel-body{padding:.7rem 1rem}
-.hotel-price{font-size:1rem;font-weight:600;color:var(--teal)}
-.hotel-price span{font-size:.7rem;font-weight:400;color:var(--mist)}
-.hotel-rating{display:inline-flex;align-items:center;gap:.2rem;font-size:.73rem;font-weight:500;color:var(--green);background:#E8F5EF;padding:.12rem .45rem;border-radius:20px;margin-top:.3rem}
-.hotel-tags{display:flex;flex-wrap:wrap;gap:.28rem;margin-top:.45rem}
-.htag{font-size:.67rem;padding:.12rem .45rem;background:var(--warm);border-radius:20px;color:var(--mist)}
-.ticket-grid{display:flex;flex-direction:column;gap:.65rem}
-.ticket-card{border:1px solid var(--line);border-radius:var(--r);padding:.85rem 1.1rem;background:#fff;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;transition:box-shadow .15s}
-.ticket-card:hover{box-shadow:0 3px 12px rgba(0,0,0,.06)}
-.ticket-card.best{border-color:var(--green);background:#F0FBF5}
-.tc-airline{font-weight:600;font-size:.88rem;color:var(--ink);min-width:100px}
-.tc-route{font-size:.79rem;color:var(--mist);display:flex;align-items:center;gap:.35rem;flex:1}
-.tc-meta{display:flex;flex-direction:column;align-items:flex-end;gap:.18rem}
-.tc-price{font-size:.98rem;font-weight:600;color:var(--teal)}
-.tc-dur{font-size:.7rem;color:var(--mist)}
-.tc-stops{font-size:.68rem;padding:.1rem .4rem;border-radius:20px;font-weight:500}
-.s0{background:#E8F5EF;color:var(--green)}.s1{background:#FEF3C7;color:#92400E}
-.best-badge{font-size:.62rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;background:var(--green);color:#fff;padding:.12rem .45rem;border-radius:20px;margin-left:.4rem}
-.day-card{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:.8rem;background:#fff}
-.day-head{background:var(--teal);padding:.6rem 1.1rem;display:flex;align-items:center;justify-content:space-between}
-.day-title{font-family:var(--serif);font-size:.98rem;font-weight:400;font-style:italic;color:#F5F0E8}
-.day-date{font-size:.7rem;color:rgba(245,240,232,.6)}
-.day-body{padding:.85rem 1.1rem;display:flex;flex-direction:column;gap:.7rem}
-.tslot{display:flex;gap:.75rem;align-items:flex-start}
-.ticon{font-size:1rem;flex-shrink:0;width:26px;text-align:center;margin-top:.1rem}
-.tcontent{flex:1}
-.tlabel{font-size:.66rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--mist);margin-bottom:.18rem}
-.ttext{font-size:.84rem;line-height:1.65;color:var(--ink)}
-.tips-box{background:var(--warm);border-radius:4px;padding:.55rem .8rem;margin-top:.25rem;font-size:.77rem;color:var(--mist);line-height:1.6;border-left:3px solid var(--gold)}
-.budget-table{width:100%;border-collapse:collapse;font-size:.84rem}
-.budget-table th{background:var(--teal);color:#F5F0E8;padding:.5rem .8rem;text-align:left;font-size:.7rem;font-weight:500;text-transform:uppercase;letter-spacing:.07em}
-.budget-table td{padding:.5rem .8rem;border-bottom:1px solid var(--line)}
-.budget-table tr:hover td{background:#FAFAF8}
-.trow td{font-weight:600;background:var(--warm);border-top:2px solid var(--line)}
-.grow td{font-weight:700;font-size:.93rem;background:#E8F5EF;color:var(--green)}
-.bstatus{display:inline-flex;align-items:center;gap:.35rem;font-size:.83rem;font-weight:500;padding:.45rem .9rem;border-radius:var(--r);margin-top:.85rem}
-.bok{background:#E8F5EF;color:var(--green);border:1px solid #B5DEC9}
-.bover{background:#FEF0ED;color:var(--rust);border:1px solid #F0C4B8}
-.raw{font-size:.86rem;line-height:1.75;color:var(--ink);font-weight:300}
-.raw h2{font-family:var(--serif);color:var(--teal);margin:1rem 0 .4rem;font-weight:400;font-size:1.2rem}
-.raw h3{color:var(--rust);margin:.75rem 0 .25rem;font-size:.93rem}
-.raw table{width:100%;border-collapse:collapse;margin:.7rem 0;font-size:.82rem}
-.raw th{background:var(--warm);padding:.42rem .65rem;text-align:left;font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mist)}
-.raw td{padding:.42rem .65rem;border-bottom:1px solid var(--line)}
-.raw ul,.raw ol{padding-left:1.1rem;margin:.35rem 0}
-.raw li{margin-bottom:.22rem}
-.error-banner{background:#FDF0ED;border:1px solid #E8C5B8;border-radius:var(--r);padding:.85rem 1.1rem;font-size:.86rem;color:var(--rust);display:none;margin-bottom:1.4rem}
-.error-banner.show{display:block}
-footer{text-align:center;padding:2rem;font-size:.72rem;color:var(--mist);border-top:1px solid var(--line);font-weight:300}
-footer a{color:var(--teal);text-decoration:none}
-@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-@keyframes spin{to{transform:rotate(360deg)}}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 4px rgba(27,77,92,.1)}50%{box-shadow:0 0 0 8px rgba(27,77,92,.04)}}
-@media(max-width:600px){.form-grid{grid-template-columns:1fr}.form-grid .full{grid-column:1}.hotel-grid,.attr-grid{grid-template-columns:1fr}.ticket-card{flex-direction:column;align-items:flex-start}}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Trip Planner | Professional Travel Planning</title>
+    <meta name="description" content="Plan your perfect trip with our AI-powered travel planner using CrewAI.">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
-<header>
-  <p class="eyebrow">6-Agent CrewAI Pipeline · Free APIs</p>
-  <h1>Voyage<em>AI</em></h1>
-  <p>Tell us your destination. Our AI agents handle everything — tickets, hotels, weather, itinerary &amp; budget.</p>
-  <div class="agent-strip">
-    <span>Researcher</span><span>Weather</span><span>Hotels</span>
-    <span>Tickets</span><span>Itinerary</span><span>Budget</span>
-  </div>
-</header>
-<main>
-<div class="error-banner" id="errorBanner"></div>
-<section id="formSection">
-  <h2 class="section-title">Plan Your Trip <sup>step 01</sup></h2>
-  <div class="form-grid">
-    <div class="field full"><label>Destination</label><input id="destination" type="text" placeholder="e.g. Paris, France" value="Paris, France"/></div>
-    <div class="field"><label>Departing from</label><input id="originCity" type="text" placeholder="e.g. New Delhi" value="New Delhi"/></div>
-    <div class="field"><label>Travel dates</label><input id="travelDates" type="text" placeholder="e.g. 15 Sep – 22 Sep 2025" value="15 Sep 2025 – 22 Sep 2025"/></div>
-    <div class="field"><label>Travellers</label><input id="numTravellers" type="number" min="1" max="20" value="2"/></div>
-    <div class="field"><label>Budget (₹ INR)</label><input id="budget" type="number" min="5000" step="1000" value="150000"/></div>
-    <div class="field full"><label>Interests</label><textarea id="interests">history, street food, art galleries, local markets</textarea></div>
-    <div class="field full">
-      <label>Travel mode</label>
-      <div class="mode-group">
-        <button class="mode-btn active" data-mode="flight" onclick="setMode('flight')">✈ Flight</button>
-        <button class="mode-btn" data-mode="train" onclick="setMode('train')">🚆 Train</button>
-        <button class="mode-btn" data-mode="both" onclick="setMode('both')">✈ + 🚆 Both</button>
-      </div>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
     </div>
-    <div class="field full">
-      <label>Departure date</label>
-      <input id="depDate" type="date" value="2025-09-15"/>
-      <p style="font-size:.7rem;color:var(--mist);margin-top:.3rem">🤖 Airport &amp; station codes are auto-detected from your city names — no technical knowledge needed!</p>
+
+    <div class="container">
+        <header>
+            <h1>AI Trip <span class="accent">Planner</span></h1>
+            <p>Your personalized journey, orchestrated by 6 specialized agents.</p>
+        </header>
+
+        <main>
+            <section class="planner-card">
+                <form id="planner-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="origin_city">Origin City</label>
+                            <input type="text" id="origin_city" placeholder="e.g., Delhi" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="destination">Destination</label>
+                            <input type="text" id="destination" placeholder="e.g., London" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="travel_dates">Dates (Text)</label>
+                            <input type="text" id="travel_dates" placeholder="e.g., 20-25 Oct" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="date_yyyymmdd">Date (YYYY-MM-DD)</label>
+                            <input type="date" id="date_yyyymmdd" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="num_travellers">Travellers</label>
+                            <input type="number" id="num_travellers" min="1" value="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="budget_inr">Budget (INR)</label>
+                            <input type="number" id="budget_inr" placeholder="e.g., 100000" required>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="interests">Interests & Preferences</label>
+                            <textarea id="interests" rows="3" placeholder="e.g., Luxury stay, food tours, local culture, budget friendly..."></textarea>
+                        </div>
+                        <div class="form-group full-width">
+                            <label>Travel Mode</label>
+                            <div class="radio-group">
+                                <label><input type="radio" name="travel_mode" value="flight" checked> Flight</label>
+                                <label><input type="radio" name="travel_mode" value="train"> Indian Railways</label>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" id="submit-btn">Generate Itinerary</button>
+                </form>
+            </section>
+
+            <section id="progress-section" class="hidden">
+                <div class="progress-card">
+                    <h3>Pipeline Status</h3>
+                    <div class="pipeline-visual">
+                        <div class="agent-step" data-step="1">
+                            <div class="step-icon">🔍</div>
+                            <span>Research</span>
+                        </div>
+                        <div class="line"></div>
+                        <div class="agent-step" data-step="2">
+                            <div class="step-icon">☁️</div>
+                            <span>Weather</span>
+                        </div>
+                        <div class="line"></div>
+                        <div class="agent-step" data-step="3">
+                            <div class="step-icon">🏨</div>
+                            <span>Hotels</span>
+                        </div>
+                        <div class="line"></div>
+                        <div class="agent-step" data-step="4">
+                            <div class="step-icon">✈️</div>
+                            <span>Tickets</span>
+                        </div>
+                        <div class="line"></div>
+                        <div class="agent-step" data-step="5">
+                            <div class="step-icon">📅</div>
+                            <span>Planner</span>
+                        </div>
+                        <div class="line"></div>
+                        <div class="agent-step" data-step="6">
+                            <div class="step-icon">💰</div>
+                            <span>Budget</span>
+                        </div>
+                    </div>
+                    <p id="status-text">Waking up agents...</p>
+                </div>
+            </section>
+
+            <section id="result-section" class="hidden">
+                <div class="result-card">
+                    <div id="itinerary-content" class="markdown-body"></div>
+                    <button id="download-btn">Download Itinerary</button>
+                    <button id="reset-btn">Plan Another Trip</button>
+                </div>
+            </section>
+        </main>
     </div>
-  </div>
-  <div class="submit-wrap"><button class="btn-plan" id="planBtn" onclick="startPlanning()">Plan my trip →</button></div>
-</section>
-<div class="ornament">· · ·</div>
-<section id="pipeline-section">
-  <h2 class="section-title">Agents at Work <sup>step 02</sup></h2>
-  <div class="pipeline" id="pipeline">
-    <div class="pipe-step" id="step-0"><div class="step-dot"><span class="dot-emoji">🗺</span><div class="dot-spinner"></div><span class="dot-check">✓</span></div><div class="step-info"><div class="step-name">Destination Researcher</div><div class="step-desc">Searching attractions, visa info & hidden gems</div><div class="step-api">Serper API · Groq</div></div></div>
-    <div class="pipe-step" id="step-1"><div class="step-dot"><span class="dot-emoji">🌤</span><div class="dot-spinner"></div><span class="dot-check">✓</span></div><div class="step-info"><div class="step-name">Weather Checker</div><div class="step-desc">Fetching 5-day forecast & packing advice</div><div class="step-api">OpenWeather API · Groq</div></div></div>
-    <div class="pipe-step" id="step-2"><div class="step-dot"><span class="dot-emoji">🏨</span><div class="dot-spinner"></div><span class="dot-check">✓</span></div><div class="step-info"><div class="step-name">Hotel Finder</div><div class="step-desc">Finding best stays within budget</div><div class="step-api">Serper API · Groq</div></div></div>
-    <div class="pipe-step" id="step-3"><div class="step-dot"><span class="dot-emoji" id="ticketEmoji">✈</span><div class="dot-spinner"></div><span class="dot-check">✓</span></div><div class="step-info"><div class="step-name">Ticket Price Finder</div><div class="step-desc" id="ticketDesc">Comparing cheapest flights</div><div class="step-api" id="ticketApi">Serper / Aviationstack · Groq</div></div></div>
-    <div class="pipe-step" id="step-4"><div class="step-dot"><span class="dot-emoji">📅</span><div class="dot-spinner"></div><span class="dot-check">✓</span></div><div class="step-info"><div class="step-name">Itinerary Planner</div><div class="step-desc">Building day-by-day schedule</div><div class="step-api">Groq</div></div></div>
-    <div class="pipe-step" id="step-5"><div class="step-dot"><span class="dot-emoji">💰</span><div class="dot-spinner"></div><span class="dot-check">✓</span></div><div class="step-info"><div class="step-name">Budget Estimator</div><div class="step-desc">Calculating total trip costs</div><div class="step-api">Groq</div></div></div>
-  </div>
-</section>
-<section id="output-section">
-  <h2 class="section-title">Your Travel Guide <sup>step 03</sup></h2>
-  <div class="guide-hero">
-    <div><h2 id="guideTitle">Paris, France</h2><p id="guideSubtitle">7 days · 2 travellers</p></div>
-    <div class="guide-hero-actions">
-      <button class="guide-btn" onclick="copyGuide()">📋 Copy</button>
-      <a class="guide-btn primary" id="downloadBtn" download="travel_guide.md">⬇ Download</a>
-    </div>
-  </div>
-  <div class="guide-stats">
-    <div class="stat-pill"><span class="si">✈</span><div><div class="sv" id="statFlight">—</div><div class="sl">Ticket Range</div></div></div>
-    <div class="stat-pill"><span class="si">🏨</span><div><div class="sv" id="statHotel">—</div><div class="sl">Recommended hotel</div></div></div>
-    <div class="stat-pill"><span class="si">🌡</span><div><div class="sv" id="statWeather">—</div><div class="sl">Weather</div></div></div>
-    <div class="stat-pill"><span class="si">💰</span><div><div class="sv" id="statBudget">—</div><div class="sl">Grand total</div></div></div>
-  </div>
-  <div id="guideContent"></div>
-  <div class="submit-wrap" style="margin-top:1.75rem"><button class="btn-plan" onclick="resetForm()">Plan another trip →</button></div>
-</section>
-</main>
-<footer>VoyageAI — <a href="https://crewai.com" target="_blank">CrewAI</a> · <a href="https://console.groq.com" target="_blank">Groq</a> · <a href="https://serper.dev" target="_blank">Serper</a> · <a href="https://openweathermap.org" target="_blank">OpenWeather</a> · <a href="https://rapidapi.com" target="_blank">RapidAPI</a> — All free tiers.</footer>
-<script>
-const API_BASE='http://localhost:5000';
-let currentMode='flight',currentStep=-1,pollInterval=null,rawResult='';
-const STEP_DUR=[30000,20000,25000,28000,35000,20000];
 
-function setMode(m){
-  currentMode=m;
-  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));
-  document.getElementById('ticketEmoji').textContent={flight:'✈',train:'🚆',both:'✈🚆'}[m];
-  document.getElementById('ticketDesc').textContent={flight:'Comparing cheapest flights',train:'Finding best trains',both:'Comparing flights & trains'}[m];
-}
-
-function getFormData(){
-  return{
-    destination:    document.getElementById('destination').value.trim(),
-    origin_city:    document.getElementById('originCity').value.trim(),
-    travel_dates:   document.getElementById('travelDates').value.trim(),
-    num_travellers: parseInt(document.getElementById('numTravellers').value)||2,
-    budget_inr:     parseInt(document.getElementById('budget').value)||150000,
-    interests:      document.getElementById('interests').value.trim(),
-    travel_mode:    currentMode,
-    dep_date:       document.getElementById('depDate').value,
-  };
-}
-
-function activateStep(i){
-  if(i===currentStep)return;
-  if(currentStep>=0){const e=document.getElementById('step-'+currentStep);e.classList.remove('active');e.classList.add('done');}
-  currentStep=i;const el=document.getElementById('step-'+i);el.classList.remove('done');el.classList.add('active');
-  el.scrollIntoView({behavior:'smooth',block:'nearest'});
-}
-function finishAll(){for(let i=0;i<=5;i++){const e=document.getElementById('step-'+i);e.classList.remove('active');e.classList.add('done');}currentStep=-1;}
-function resetSteps(){for(let i=0;i<=5;i++){const e=document.getElementById('step-'+i);e.classList.remove('active','done');e.style.opacity='';}currentStep=-1;}
-function simProgress(){let s=0;activateStep(s);function adv(){if(s>=5)return;s++;activateStep(s);if(s<5)setTimeout(adv,STEP_DUR[s]);}setTimeout(adv,STEP_DUR[0]);}
-
-async function startPlanning(){
-  hideError();const data=getFormData();
-  if(!data.destination){showError('Please enter a destination.');return;}
-  document.getElementById('planBtn').disabled=true;document.getElementById('planBtn').textContent='Planning…';
-  document.getElementById('formSection').style.cssText='opacity:.5;pointer-events:none';
-  document.getElementById('output-section').classList.remove('show');
-  const ps=document.getElementById('pipeline-section');ps.classList.add('show');ps.style.display='block';
-  resetSteps();ps.scrollIntoView({behavior:'smooth'});
-  try{
-    const r=await fetch(API_BASE+'/api/plan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data),signal:AbortSignal.timeout(8000)});
-    if(!r.ok)throw new Error('err');
-    const {job_id}=await r.json();simProgress();
-    pollInterval=setInterval(()=>pollJob(job_id,data),4000);
-  }catch(e){console.warn('Demo mode');runDemo(data);}
-}
-
-async function pollJob(jid,data){
-  try{
-    const r=await fetch(API_BASE+'/api/status/'+jid);const job=await r.json();
-    if(job.status==='done'){clearInterval(pollInterval);renderGuide(data,job.result);}
-    else if(job.status==='error'){clearInterval(pollInterval);showError('Error: '+(job.error||'unknown'));resetUI();}
-  }catch(e){clearInterval(pollInterval);showError('Lost connection.');resetUI();}
-}
-
-/* ════════════ RENDER GUIDE ════════════ */
-function renderGuide(data,text){
-  finishAll();document.getElementById('pipeline-section').style.display='none';rawResult=text;
-  const secs=parseSections(text);
-  document.getElementById('guideTitle').textContent=data.destination;
-  const n=estimateNights(data.travel_dates);
-  document.getElementById('guideSubtitle').textContent=n+' days · '+data.num_travellers+' traveller'+(data.num_travellers>1?'s':'')+' · ₹'+(data.budget_inr/1000).toFixed(0)+'k budget';
-  fillStats(secs,data);
-  const c=document.getElementById('guideContent');c.innerHTML='';
-  [
-    {k:'research',ic:'🗺',t:'Destination Research',col:'#1B4D5C',fn:renderResearch},
-    {k:'weather', ic:'🌤',t:'Weather Forecast',     col:'#2563EB',fn:renderWeather},
-    {k:'hotels',  ic:'🏨',t:'Hotel Recommendations',col:'#7C3AED',fn:renderHotels},
-    {k:'tickets', ic:'✈', t:'Ticket Options',       col:'#C2471A',fn:renderTickets},
-    {k:'itinerary',ic:'📅',t:'Day-by-Day Itinerary',col:'#065F46',fn:renderItinerary},
-    {k:'budget',  ic:'💰',t:'Budget Breakdown',     col:'#92400E',fn:renderBudget},
-  ].forEach(cfg=>{
-    const card=document.createElement('div');card.className='guide-section';
-    card.innerHTML='<div class="gs-header" onclick="toggleSec(this)"><div class="gs-icon" style="background:'+cfg.col+'22">'+cfg.ic+'</div><div class="gs-title">'+cfg.t+'</div><span class="gs-toggle">▾</span></div><div class="gs-body" id="gsb-'+cfg.k+'"></div>';
-    c.appendChild(card);
-    const body=document.getElementById('gsb-'+cfg.k);
-    if((secs[cfg.k]||'').trim())cfg.fn(body,secs[cfg.k]);
-    else body.innerHTML='<p style="color:var(--mist);font-size:.84rem">Section not available.</p>';
-  });
-  const blob=new Blob([text],{type:'text/markdown'});
-  const dl=document.getElementById('downloadBtn');dl.href=URL.createObjectURL(blob);
-  dl.download='travel_guide_'+data.destination.replace(/[^a-z0-9]/gi,'_').toLowerCase()+'.md';
-  const os=document.getElementById('output-section');os.classList.add('show');os.scrollIntoView({behavior:'smooth'});resetUI();
-}
-
-function toggleSec(h){const b=h.nextElementSibling;const t=h.querySelector('.gs-toggle');b.classList.toggle('collapsed');t.style.transform=b.classList.contains('collapsed')?'rotate(-90deg)':'';}
-
-function parseSections(text) {
-  const map = {};
-  [{k:'research', re:/##\s*(?:Destination )?Research([\s\S]*?)(?=\n##\s*|\n---\s*\n##\s*|$)/i},
-   {k:'weather', re:/##\s*Weather(?: Forecast)?([\s\S]*?)(?=\n##\s*|\n---\s*\n##\s*|$)/i},
-   {k:'hotels',  re:/##\s*Hotel([\s\S]*?)(?=\n##\s*|\n---\s*\n##\s*|$)/i},
-   {k:'tickets', re:/##\s*(?:Ticket|Flight|Train|Transport)([\s\S]*?)(?=\n##\s*|\n---\s*\n##\s*|$)/i},
-   {k:'itinerary',re:/##\s*(?:Day-by-Day )?Itinerary([\s\S]*?)(?=\n##\s*|\n---\s*\n##\s*|$)/i},
-   {k:'budget',  re:/##\s*Budget([\s\S]*?)(?=\n##\s*|\n---\s*\n##\s*|$)/i},
-  ].forEach(p => { const m = text.match(p.re); map[p.k] = m ? m[1].trim() : ''; });
-  
-  if (Object.values(map).every(v => !v)) {
-    const parts = text.split(/\n---\n/);
-    ['research','weather','hotels','tickets','itinerary','budget'].forEach((k,i) => {
-      map[k] = parts[i] ? parts[i].trim() : '';
-    }); 
-  }
-  return map;
-}
-
-function estimateNights(d){
-  if(!d)return 7;
-  const months={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
-  const parts=d.toLowerCase().split(/[–—\-to]+/).map(s=>s.trim()).filter(Boolean);
-  if(parts.length>=2){
-    function extractDay(s){const m=s.match(/\b(\d{1,2})\b/g);return m?parseInt(m[0]):null;}
-    const d1=extractDay(parts[0]);
-    const d2=extractDay(parts[parts.length-1]);
-    if(d1&&d2&&d2>d1)return d2-d1+1;
-    if(d1&&d2&&d2<d1)return(30-d1)+d2+1; 
-  }
-  const nums=d.match(/\b(\d{1,2})\b/g);
-  if(nums&&nums.length>=2){
-    const a=parseInt(nums[0]),b=parseInt(nums[nums.length-1]);
-    if(b>a&&b-a<35)return b-a+1;
-  }
-  return 7;
-}
-
-function fillStats(s, data) {
-  const tk = s.tickets || '';
-  const allPrices = [...tk.matchAll(/(?:₹|INR)\s*([\d,]+)/gi)].map(m => parseInt(m[1].replace(/,/g, ''))).filter(n => !isNaN(n));
-  if (allPrices.length > 0) {
-    const min = Math.min(...allPrices);
-    const max = Math.max(...allPrices);
-    document.getElementById('statFlight').textContent = min === max ? `₹${min.toLocaleString()}` : `₹${min.toLocaleString()} – ₹${max.toLocaleString()}`;
-  } else {
-    document.getElementById('statFlight').textContent = data.travel_mode === 'train' ? 'Train found' : 'Flight found';
-  }
-
-  const ht = s.hotels || ''; const rm = ht.match(/recommended.*?:\s*([^\n(]+)/i);
-  document.getElementById('statHotel').textContent = rm ? rm[1].trim().substring(0, 22) : '3 options found';
-  
-  const wt = s.weather || ''; const tm = wt.match(/(\d+)°C\s*[–-]\s*(\d+)°C/);
-  document.getElementById('statWeather').textContent = tm ? tm[1] + '–' + tm[2] + '°C' : 'Checked ✓';
-  
-  const bt = s.budget || ''; const gm = bt.match(/grand total[^\d]*([\d,]+)/i) || bt.match(/\*\*([\d,]+)\*\*/i);
-  document.getElementById('statBudget').textContent = gm ? '₹' + gm[1] : 'Calculated';
-}
-
-/* ── Destination Research ── */
-function renderResearch(el,text){
-  const lines=text.split('\n').map(l=>l.trim()).filter(l=>l.length>15);
-  const attrLines=lines.filter(l=>(l.startsWith('*')||l.startsWith('-'))&&!/^[*-]\s*(food|visa|transport|tip|hidden|2 local|3 dish)/i.test(l)&&l.length>20);
-  let html='';
-  if(attrLines.length>=2){
-    html+='<p style="font-size:.7rem;font-weight:500;text-transform:uppercase;letter-spacing:.1em;color:var(--mist);margin-bottom:.55rem">Top Attractions</p><div class="attr-grid">';
-    attrLines.slice(0,6).forEach(l=>{
-      const clean=l.replace(/^[\*\->\s]+/,'').trim();
-      const sepIdx=clean.search(/:\s|(?<=\w)\s-\s|(?<=\w)\s—\s|\sis\s(a|an)\s/);
-      let name,desc;
-      if(sepIdx>0&&sepIdx<50){name=clean.substring(0,sepIdx).trim().replace(/[:\-—]$/,'').trim();desc=clean.substring(sepIdx).replace(/^[\s:\-—]+/,'').trim();}
-      else{const ci=clean.indexOf(',');name=ci>0&&ci<40?clean.substring(0,ci).trim():clean.substring(0,35).trim();desc=ci>0&&ci<40?clean.substring(ci+1).trim():'';}
-      html+='<div class="attr-card"><h4>'+escHtml(name.substring(0,40))+'</h4>';
-      if(desc)html+='<p>'+escHtml(desc.substring(0,110))+'</p>';
-      html+='</div>';
-    });
-    html+='</div>';
-  }
-  html+='<div class="raw" style="margin-top:'+(attrLines.length>=2?'1rem':'0')+'">'+mdToHtml(text)+'</div>';
-  el.innerHTML=html;
-}
-
-/* ── Weather ── */
-function renderWeather(el,text){
-  const tMatch=text.match(/\|[\s\S]+?\|[\s\S]*?(?=\n\n|Packing|Outdoor|$)/i);
-  let html='';
-  if(tMatch){
-    const rows=tMatch[0].trim().split('\n').filter(r=>r.includes('|')&&!r.match(/^[\s|:-]+$/));
-    html+='<div style="overflow-x:auto;margin-bottom:1.1rem"><table class="weather-table"><thead><tr>';
-    rows[0].split('|').filter(c=>c.trim()).forEach(h=>{html+='<th>'+escHtml(h.trim())+'</th>';});
-    html+='</tr></thead><tbody>';
-    rows.slice(1).forEach(row=>{
-      const cells=row.split('|').filter(c=>c.trim());
-      html+='<tr>';
-      cells.forEach((c,i)=>{
-        let v=escHtml(c.trim());
-        if(i===2||i===1){const lc=v.toLowerCase();const cls=lc.includes('sun')||lc.includes('clear')?'w-sun':lc.includes('rain')||lc.includes('shower')?'w-rain':'w-cloud';v='<span class="wbadge '+cls+'">'+v+'</span>';}
-        html+='<td>'+v+'</td>';
-      });
-      html+='</tr>';
-    });
-    html+='</tbody></table></div>';
-  }
-  const pm=text.match(/Packing Checklist[:\s]*([\s\S]*?)(?=Outdoor|Weather Warning|$)/i);
-  if(pm){
-    const items=pm[1].match(/[-*]\s*(.+)/g);
-    if(items&&items.length){
-      html+='<p style="font-size:.7rem;font-weight:500;text-transform:uppercase;letter-spacing:.1em;color:var(--mist);margin-bottom:.55rem">Packing Checklist</p><div class="pack-grid">';
-      items.forEach(it=>{html+='<div class="pack-item">'+escHtml(it.replace(/^[-*]\s*/,''))+'</div>';});
-      html+='</div>';
-    }
-  }
-  if(!html)html='<div class="raw">'+mdToHtml(text)+'</div>';
-  el.innerHTML=html;
-}
-
-/* ── Hotels ── */
-function renderHotels(el,text){
-  const blocks=text.split(/\n(?=\d+\.\s*Hotel)/i).filter(b=>b.trim()&&/hotel/i.test(b));
-  if(!blocks.length){el.innerHTML='<div class="raw">'+mdToHtml(text)+'</div>';return;}
-  const recM=text.match(/recommended.*?:\s*([^\n.]+)/i);
-  const recName=recM?recM[1].toLowerCase().trim():'';
-  let html='<div class="hotel-grid">';
-  blocks.forEach(b=>{
-    const nm=b.match(/Hotel Name.*?:\s*(.+)/i) || b.match(/(?:Hotel\s*)?Name.*?:\s*(.+)/i);
-    const sm=b.match(/(\d)-star/i);
-    const lm=b.match(/Location.*?:\s*(.+)/i);
-    const pm=b.match(/₹[\s]*([\d,]+)/);
-    const rm=b.match(/([\d.]+)\/10/);
-    const am=b.match(/Amenities.*?:\s*(.+)/i);
-    const wm=b.match(/Why.*?:\s*(.+)/i);
-    const name=nm?nm[1].replace(/\(\d-star\)/i,'').trim():'Hotel Option';
-    const stars=sm?'★'.repeat(parseInt(sm[1]))+'☆'.repeat(5-parseInt(sm[1])):'★★★';
-    const isRec=recName&&name.toLowerCase().includes(recName.substring(0,15));
-    const tags=am?am[1].split(/[,;]/).slice(0,4).map(t=>'<span class="htag">'+escHtml(t.trim())+'</span>').join(''):'';
-    html+='<div class="hotel-card'+(isRec?' rec':'')+'"><div class="hotel-head"><div class="hotel-name">'+escHtml(name)+(isRec?'<span class="rec-badge">★ Top Pick</span>':'')+'</div><div class="hotel-stars">'+stars+'</div><div class="hotel-loc">📍 '+(lm?escHtml(lm[1].substring(0,40)):'Destination')+'</div></div><div class="hotel-body"><div class="hotel-price">'+(pm?'₹'+pm[1]:'—')+'<span>/night</span></div>'+(rm?'<div class="hotel-rating">⭐ '+rm[1]+'/10</div>':'')+'<div class="hotel-tags">'+tags+'</div>'+(wm?'<p style="font-size:.77rem;color:var(--mist);margin-top:.45rem;line-height:1.5">'+escHtml(wm[1].substring(0,120))+'</p>':'')+'</div></div>';
-  });
-  html+='</div>';
-  el.innerHTML=html;
-}
-
-/* ── Tickets ── */
-function renderTickets(el,text){
-  const bm = text.match(/best pick.*?[:\-]\s*([^\n]+)/i);
-  const allLines = text.split('\n').map(l=>l.trim()).filter(l=>l.length>8);
-  const entries = [];
-  allLines.forEach(line => {
-    if(!/^\d+[.)]/i.test(line)) return;
-    const num = (line.match(/^(\d+)/)||[])[1];
-    const pm = line.match(/(?:₹|INR)\s*([\d,]+)/i);
-    const dm = line.match(/(\d+(?:\.\d+)?)\s*(?:hours?|h(?:rs?)?)\b/i);
-    const tim = line.match(/\b(\d{1,2}:\d{2})\b/g);
-    const trainNum = (line.match(/\b([1-9]\d{4})\b/)||[])[1];
-    const flightCode = (line.match(/\b([A-Z]{2}|[0-9][A-Z])[- ]?(\d{2,4})\b/)||[]);
-    const nonstop = /non.?stop|direct/i.test(line);
-    const stopsM = line.match(/(\d+)\s*stop/i) || line.match(/Stops:\s*(\d+)/i);
-    const classM = (line.match(/\b(SL|3A|2A|1A|CC|EC)\b/i)||[])[0];
-    let name = line
-      .replace(/^\d+[.)]\s*/,'')
-      .replace(/[-–|].*$/,'')
-      .replace(/₹[\d,]+/gi,'')
-      .replace(/\d+h(ours?)?\b/gi,'')
-      .replace(/\b\d{5}\b/g,'')
-      .replace(/\b[A-Z]{2}[-\s]?\d{2,4}\b/g,'')
-      .replace(/(?:₹|INR|inr).*/gi,'')
-      .replace(/Airline\/Train:/i,'')
-      .trim();
-    if(name.length > 45) name = name.substring(0,45).trim();
-    const routeM = line.match(/\b([A-Z]{3,4})\s*(?:to|→|->)\s*([A-Z]{3,4})\b/i);
-    entries.push({
-      num, name: name||('Option '+num),
-      price: pm ? pm[1] : null,
-      duration: dm ? dm[1] : null,
-      times: tim||[],
-      trainNum: trainNum||null,
-      flightCode: flightCode[1] ? flightCode[1]+(flightCode[2]||'') : null,
-      stops: nonstop?'0': stopsM?stopsM[1]:null,
-      classInfo: classM||null,
-      route: routeM ? routeM[1].toUpperCase()+'→'+routeM[2].toUpperCase() : null,
-      raw: line,
-    });
-  });
-
-  if(!entries.length){el.innerHTML='<div class="raw">'+mdToHtml(text)+'</div>';return;}
-
-  const isTrainMode = entries.some(e=>e.trainNum||/express|rajdhani|shatabdi|mail|superfast/i.test(e.raw));
-  const bestTxt = bm ? bm[1].toLowerCase() : '';
-
-  let html='<div class="ticket-grid">';
-  entries.slice(0,4).forEach(e=>{
-    const isBest = bestTxt && (e.name ? bestTxt.includes(e.name.toLowerCase().substring(0,12)) : false);
-    const code   = e.flightCode || (e.trainNum ? '#'+e.trainNum : '');
-    const icon   = isTrainMode ? '🚆' : '✈';
-
-    html += '<div class="ticket-card'+(isBest?' best':'')+'"">';
-    html += '<div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">';
-    html += '<span style="font-size:1.1rem">'+icon+'</span>';
-    html += '<span style="font-weight:600;font-size:.88rem;color:var(--ink)">'+escHtml(e.name)+'</span>';
-    if(code) html += '<span style="font-size:.7rem;background:var(--warm);color:var(--mist);padding:.1rem .42rem;border-radius:4px">'+escHtml(code)+'</span>';
-    if(e.classInfo) html += '<span style="font-size:.7rem;background:#E6F1FB;color:#0C447C;padding:.1rem .42rem;border-radius:4px">'+escHtml(e.classInfo.toUpperCase())+'</span>';
-    if(isBest) html += '<span class="best-badge">✓ Best</span>';
-    html += '</div>';
-
-    html += '<div style="display:flex;align-items:center;gap:.5rem;margin-top:.35rem;font-size:.82rem;color:var(--mist)">';
-    if(e.times.length>=2){
-      html += '<span style="font-weight:500;color:var(--ink)">'+e.times[0]+'</span>';
-      html += '<span style="color:var(--teal)">→</span>';
-      html += '<span style="font-weight:500;color:var(--ink)">'+e.times[1]+'</span>';
-    } else if(e.route){
-      html += '<span>'+escHtml(e.route)+'</span>';
-    }
-    if(e.duration) html += '<span>⏱ '+e.duration+'h</span>';
-    if(e.stops!==null){
-      const sc = e.stops==='0'?'s0':'s1';
-      html += '<span class="tc-stops '+sc+'">'+(e.stops==='0'?'Non-stop':e.stops+' stop')+'</span>';
-    }
-    html += '</div>';
-
-    if(e.price){
-      html += '<div style="margin-top:.35rem"><span style="font-size:1rem;font-weight:700;color:var(--teal)">₹'+e.price+'</span></div>';
-    }
-    html += '</div>';
-  });
-  html += '</div>';
-
-  if(bm){
-    html += '<div style="margin-top:.85rem;background:#F0FBF5;border:1px solid #B5DEC9;border-radius:6px;padding:.7rem 1rem;font-size:.83rem;line-height:1.6">';
-    html += '<strong style="color:var(--green)">💡 Best Pick:</strong> '+escHtml(bm[1].trim());
-    html += '</div>';
-  }
-  el.innerHTML=html;
-}
-
-/* ── Itinerary ── */
-function renderItinerary(el, text) {
-  const days = text.split(/\n(?=(?:##\s*)?Day \d+:)/i).filter(b => b.trim() && /day \d/i.test(b));
-  if (!days.length) { el.innerHTML = '<div class="raw">' + mdToHtml(text) + '</div>'; return; }
-  
-  let html = '';
-  days.forEach(block => {
-    const tm = block.match(/^(?:##\s*)?Day (\d+):\s*(.+?)(?:\s*\((.+?)\))?$/im);
-    const title = tm ? 'Day ' + tm[1] + ': ' + tm[2].trim() : 'Day';
-    const date = tm && tm[3] ? tm[3].trim() : '';
-    
-    const M = block.match(/(?:🌅)?\s*\*{0,2}Morning\*{0,2}:?\s*(.+?)(?=☀|🌙|\n(?:🌅|Afternoon|Evening)|$)/is);
-    const A = block.match(/(?:☀)?\s*\*{0,2}Afternoon\*{0,2}:?\s*(.+?)(?=🌙|\n(?:🌅|Evening)|$)/is);
-    const E = block.match(/(?:🌙)?\s*\*{0,2}Evening\*{0,2}:?\s*(.+?)(?=Practical|$)/is);
-    const T = block.match(/Practical Tips?:?\s*([\s\S]+?)(?=\n\n(?:##\s*)?Day|$)/i);
-
-    html += '<div class="day-card"><div class="day-head"><div class="day-title">' + escHtml(title) + '</div>' + (date ? '<div class="day-date">' + escHtml(date) + '</div>' : '') + '</div><div class="day-body">';
-    if (M) html += '<div class="tslot"><div class="ticon">🌅</div><div class="tcontent"><div class="tlabel">Morning</div><div class="ttext">' + escHtml(M[1].trim().substring(0, 280)) + '</div></div></div>';
-    if (A) html += '<div class="tslot"><div class="ticon">☀</div><div class="tcontent"><div class="tlabel">Afternoon</div><div class="ttext">' + escHtml(A[1].trim().substring(0, 280)) + '</div></div></div>';
-    if (E) html += '<div class="tslot"><div class="ticon">🌙</div><div class="tcontent"><div class="tlabel">Evening</div><div class="ttext">' + escHtml(E[1].trim().substring(0, 280)) + '</div></div></div>';
-    if (T) { const tips = T[1].match(/[-*]\s*(.+)/g); if (tips && tips.length) html += '<div class="tips-box">💡 ' + tips.slice(0, 3).map(t => escHtml(t.replace(/^[-*]\s*/, ''))).join(' · ') + '</div>'; }
-    html += '</div></div>';
-  });
-  el.innerHTML = html;
-}
-
-/* ── Budget ── */
-function renderBudget(el,text){
-  const tm=text.match(/\|[\s\S]+?\|[\s\S]*?(?=\n\nSubtotal|\n\n\*|$)/i);
-  let html='';
-  if(tm){
-    const rows=tm[0].trim().split('\n').filter(r=>r.includes('|')&&!r.match(/^[\s|:-]+$/));
-    html+='<div style="overflow-x:auto"><table class="budget-table"><thead><tr>';
-    rows[0].split('|').filter(c=>c.trim()).forEach(h=>{html+='<th>'+escHtml(h.trim())+'</th>';});
-    html+='</tr></thead><tbody>';
-    rows.slice(1).forEach(row=>{
-      const cells=row.split('|').filter(c=>c.trim());
-      // Bold handling for the Grand Total row
-      const isTotalRow = row.toLowerCase().includes('grand total') || row.includes('**');
-      html+='<tr class="'+(isTotalRow ? 'grow' : '')+'">';
-      cells.forEach((c, i)=>{
-        let val = escHtml(c.trim().replace(/\*\*/g, ''));
-        if (isTotalRow && i > 0 && !val.includes('₹')) val = '₹' + val; // Ensure ₹ sign
-        html+='<td>'+(isTotalRow ? '<strong>'+val+'</strong>' : val)+'</td>';
-      });
-      html+='</tr>';
-    });
-    html+='</tbody>';
-    
-    // Fallback for subtotal outside table (just in case LLM disobeys)
-    const sm=text.match(/Subtotal[:\s]*([\d,]+)/i);
-    const cm=text.match(/[Cc]ontingency[^:]*:\s*(?:\+)?([\d,]+)/);
-    if(sm || cm){
-      html+='<tfoot>';
-      if(sm)html+='<tr class="trow"><td colspan="3">Subtotal</td><td>₹'+sm[1]+'</td></tr>';
-      if(cm)html+='<tr class="trow"><td colspan="3">+ 10% Contingency</td><td>₹'+cm[1]+'</td></tr>';
-      html+='</tfoot>';
-    }
-    html+='</table></div>';
-  }
-  const stm=text.match(/(within budget|over by[^.\n]+|under by[^.\n]+)/i);
-  if(stm){const isOver=/over/i.test(stm[0]);html+='<div class="bstatus '+(isOver?'bover':'bok')+'">'+(isOver?'⚠':'✅')+' '+escHtml(stm[0].trim())+'</div>';}
-  if(!html)html='<div class="raw">'+mdToHtml(text)+'</div>';
-  el.innerHTML=html;
-}
-
-function mdToHtml(md){
-  return md.replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/^### (.+)$/gm,'<h3>$1</h3>').replace(/^## (.+)$/gm,'<h2>$1</h2>').replace(/^# (.+)$/gm,'<h2>$1</h2>')
-    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>')
-    .replace(/^\s*[-*]\s+(.+)$/gm,'• $1<br>').replace(/\n/g,'<br>');
-}
-function escHtml(s){return s?s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''}
-
-/* ── Demo ── */
-function runDemo(data){simProgress();const total=STEP_DUR.reduce((a,b)=>a+b,0)+2000;setTimeout(()=>{renderGuide(data,getDemoText(data.destination));resetUI();},total);}
-
-function getDemoText(dest){return`## Destination Research
-
-* Attractions:
-  * The Eiffel Tower is a must-visit, offering stunning panoramic views of the city.
-  * The Louvre Museum is home to the Mona Lisa and thousands of world-class artworks.
-  * Notre-Dame Cathedral is a stunning Gothic church rebuilt after the 2019 fire.
-  * Montmartre is a charming hilltop neighbourhood with artist studios and cafés.
-  * The Arc de Triomphe honours soldiers who fought for France, with a rooftop viewpoint.
-* Food:
-  * Hidden gems: Marché des Enfants Rouges (oldest covered market) and Rue Mouffetard.
-  * Dishes to try: Croissants, Steak Frites, and Crêpes Suzette.
-* Visa: Indian passport holders need a Schengen visa via the French Embassy in India.
-* Transport: Efficient Metro (16 lines), buses, taxis, and Vélib' bike-share system.
-* Tips: Greet with "Bonjour". Tipping is appreciated but not mandatory.
-
----
-
-## Weather Forecast
-
-| Day | Date | Condition | Temp Range | Humidity |
-|-----|------|-----------|-----------|---------|
-| Mon | 15 Sep | Partly Cloudy | 12°C – 22°C | 65% |
-| Tue | 16 Sep | Light Rain | 11°C – 20°C | 72% |
-| Wed | 17 Sep | Sunny | 13°C – 23°C | 58% |
-| Thu | 18 Sep | Overcast | 12°C – 21°C | 70% |
-| Fri | 19 Sep | Partly Cloudy | 11°C – 22°C | 64% |
-| Sat | 20 Sep | Light Rain | 10°C – 20°C | 75% |
-| Sun | 21 Sep | Sunny | 12°C – 22°C | 60% |
-
-Packing Checklist:
-- Umbrella / lightweight raincoat
-- Comfortable walking shoes
-- Light jacket and layers
-- Sunglasses and sunscreen
-- Power adapter (Type E/F)
-- Travel documents (passport, visa, insurance)
-
----
-
-## Hotel Recommendations
-
-1. Hotel Name: Hotel du Temps (3-star)
-Location: 11 Rue De Montholon, 75009 Paris
-Price: ₹10,300
-Amenities: WiFi, breakfast, 24-hour reception, luggage storage
-Guest rating: 8.4/10
-Why it's a good fit: Central location near Grands Boulevards, excellent value for money.
-
-2. Hotel Name: Hotel Paradis (3-star)
-Location: 41 Rue Des Petits Hotels, 75010 Paris
-Price: ₹11,500
-Amenities: WiFi, breakfast, attached bathroom, 24-hour reception
-Guest rating: 8.1/10
-Why it's a good fit: Boutique charm near Gare de l'Est, walking distance to restaurants.
-
-3. Hotel Name: Le 5 Particulier (4-star)
-Location: 37 Avenue De Saxe, 75007 Paris
-Price: ₹14,200
-Amenities: WiFi, breakfast, fitness centre, spa
-Guest rating: 9.1/10
-Why it's a good fit: Luxurious stay near the Eiffel Tower with top-notch amenities.
-
-Recommended Pick: Hotel du Temps (3-star)
-
----
-
-## Ticket Options
-
-1. Airline/Train: Air India | Duration: 10h | Price: ₹74,926 | Times: 02:35-08:05 | Stops: 0
-2. Airline/Train: Air France | Duration: 10h | Price: ₹1,23,698 | Times: 01:15-06:50 | Stops: 0
-3. Airline/Train: IndiGo | Duration: 14h | Price: ₹43,576 | Times: 08:00-22:30 | Stops: 1
-
-Best Pick: Air India AI123 — direct flight, competitive price, excellent service.
-
----
-
-## Day-by-Day Itinerary
-
-Day 1: Arrival & First Impressions
-🌅 Morning: Land at CDG, take RER B to Hotel du Temps (~50 mins). Check in, freshen up.
-☀ Afternoon: Explore nearby Grands Boulevards. Grab croissants at a local café. Stroll to Palais Garnier.
-🌙 Evening: Head to Montmartre for dinner. Try escargots at a local bistro. Views from Sacré-Cœur.
-Practical Tips: Validate your metro ticket before boarding.
-
-Day 2: Iconic Paris
-🌅 Morning: Visit the Eiffel Tower early to avoid crowds. Metro Line 6 to Bir-Hakeim.
-☀ Afternoon: Picnic at Champ de Mars. Visit Musée d'Orsay — world-class Impressionist art.
-🌙 Evening: Seine River cruise at sunset. Dinner at a riverside brasserie.
-Practical Tips: Book Eiffel Tower tickets online in advance to skip queues.
-
----
-
-## Budget Breakdown
-
-| Category | Low (INR) | Medium (INR) | High (INR) |
-|---|---|---|---|
-| Flights/Trains | 43,576 | 74,926 | 123,698 |
-| Hotel (Total) | 72,100 | 80,500 | 99,400 |
-| Meals | 14,000 | 21,000 | 35,000 |
-| Local Transport | 1,000 | 1,400 | 3,000 |
-| Attractions | 5,000 | 9,000 | 15,000 |
-| Misc | 3,000 | 7,000 | 12,000 |
-| **Grand Total** | **138,676** | **193,826** | **288,098** |
-
-✅ Within budget for Low option, slightly over for Medium option.`;}
-
-function copyGuide(){navigator.clipboard.writeText(rawResult).then(()=>{const b=document.querySelector('.guide-btn:not(.primary)');b.textContent='✓ Copied!';setTimeout(()=>b.textContent='📋 Copy',2000);});}
-function showError(m){const e=document.getElementById('errorBanner');e.textContent='⚠ '+m;e.classList.add('show');e.scrollIntoView({behavior:'smooth'});}
-function hideError(){document.getElementById('errorBanner').classList.remove('show');}
-function resetUI(){document.getElementById('planBtn').disabled=false;document.getElementById('planBtn').textContent='Plan my trip →';document.getElementById('formSection').style.cssText='';}
-function resetForm(){resetUI();document.getElementById('pipeline-section').style.display='none';document.getElementById('output-section').classList.remove('show');resetSteps();window.scrollTo({top:0,behavior:'smooth'});}
-setMode('flight');
-</script>
+    <script src="assets/js/markdown.js"></script>
+    <script src="assets/js/pipeline.js"></script>
+    <script src="assets/js/main.js"></script>
 </body>
 </html>
