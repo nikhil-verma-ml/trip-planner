@@ -1,0 +1,121 @@
+2026-05-04 00:53:19: task_name="None", task="Research Paris, France for a traveller interested in: history, street food, art galleries, local markets.
+Do ONE search then write a concise brief covering:
+- Top 5 attractions (1 line each)
+- 2 local hidden gems
+- Best area to stay
+- 3 dishes to try
+- Visa info for Indian passport holders
+- Transport options (metro/bus/taxi)
+- 2 cultural etiquette tips
+Keep response under 350 words. Be concise.", agent="Expert Travel Destination Researcher", status="started"
+
+2026-05-04 00:53:51: task_name="None", task="Research Paris, France for a traveller interested in: history, street food, art galleries, local markets.
+Do ONE search then write a concise brief covering:
+- Top 5 attractions (1 line each)
+- 2 local hidden gems
+- Best area to stay
+- 3 dishes to try
+- Visa info for Indian passport holders
+- Transport options (metro/bus/taxi)
+- 2 cultural etiquette tips
+Keep response under 350 words. Be concise.", agent="Expert Travel Destination Researcher", status="started"
+
+2026-05-04 00:54:52: task_name="None", task="Research Paris, France for a traveller interested in: history, street food, art galleries, local markets.
+Do ONE search then write a concise brief covering:
+- Top 5 attractions (1 line each)
+- 2 local hidden gems
+- Best area to stay
+- 3 dishes to try
+- Visa info for Indian passport holders
+- Transport options (metro/bus/taxi)
+- 2 cultural etiquette tips
+Keep response under 350 words. Be concise.", agent="Expert Travel Destination Researcher", status="started"
+
+2026-05-04 01:03:02: task_name="None", task="Research Paris, France for a traveller interested in: history, street food, art galleries, local markets.
+Do ONE search then write a concise brief covering:
+- Top 5 attractions (1 line each)
+- 2 local hidden gems
+- Best area to stay
+- 3 dishes to try
+- Visa info for Indian passport holders
+- Transport options (metro/bus/taxi)
+- 2 cultural etiquette tips
+Keep response under 350 words. Be concise.", agent="Expert Travel Destination Researcher", status="started"
+
+2026-05-04 01:17:06: task_name="None", task="Research Paris, France for a traveller interested in: history, street food, art galleries, local markets.
+Do ONE search then write a concise brief covering:
+- Top 5 attractions (1 line each)
+- 2 local hidden gems
+- Best area to stay
+- 3 dishes to try
+- Visa info for Indian passport holders
+- Transport options (metro/bus/taxi)
+- 2 cultural etiquette tips
+Keep response under 350 words. Be concise.", agent="Expert Travel Destination Researcher", status="started"
+
+2026-05-04 01:21:04: task_name="None", task="Research Mumbai, india for a traveller interested in: history, street food, art galleries, local markets.
+Do ONE search then write a concise brief covering:
+- Top 5 attractions (1 line each)
+- 2 local hidden gems
+- Best area to stay
+- 3 dishes to try
+- Visa info for Indian passport holders
+- Transport options (metro/bus/taxi)
+- 2 cultural etiquette tips
+Keep response under 350 words. Be concise.", agent="Expert Travel Destination Researcher", status="started"
+
+2026-05-04 01:26:10: task_name="None", task="Research Paris, France for a traveller interested in: history, street food, art galleries, local markets.
+Do ONE search then write a concise brief covering:
+- Top 5 attractions (1 line each)
+- 2 local hidden gems
+- Best area to stay
+- 3 dishes to try
+- Visa info for Indian passport holders
+- Transport options (metro/bus/taxi)
+- 2 cultural etiquette tips
+Keep response under 350 words. Be concise.", agent="Expert Travel Destination Researcher", status="started"
+
+2026-05-04 01:27:22: task_name="None", task="Research Paris, France for a traveller interested in: history, street food, art galleries, local markets.
+Do ONE search then write a concise brief covering:
+- Top 5 attractions (1 line each)
+- 2 local hidden gems
+- Best area to stay
+- 3 dishes to try
+- Visa info for Indian passport holders
+- Transport options (metro/bus/taxi)
+- 2 cultural etiquette tips
+Keep response under 350 words. Be concise.", agent="Expert Travel Destination Researcher", status="started"
+
+2026-05-04 01:27:22: task_name="None", task="Research Paris, France for a traveller interested in: history, street food, art galleries, local markets.
+Do ONE search then write a concise brief covering:
+- Top 5 attractions (1 line each)
+- 2 local hidden gems
+- Best area to stay
+- 3 dishes to try
+- Visa info for Indian passport holders
+- Transport options (metro/bus/taxi)
+- 2 cultural etiquette tips
+Keep response under 350 words. Be concise.", agent="Expert Travel Destination Researcher", status="started"
+
+2026-05-04 01:36:10: task_name="None", task="Research Paris, France for a traveller interested in: history, street food, art galleries, local markets.
+Do ONE search then write a concise brief covering:
+- Top 5 attractions (1 line each)
+- 2 local hidden gems
+- Best area to stay
+- 3 dishes to try
+- Visa info for Indian passport holders
+- Transport options (metro/bus/taxi)
+- 2 cultural etiquette tips
+Keep response under 350 words. Be concise.", agent="Expert Travel Destination Researcher", status="started"
+
+2026-05-04 01:41:32: task_name="None", task="Research Paris, France for a traveller interested in: history, street food, art galleries, local markets.
+Do ONE search then write a concise brief covering:
+- Top 5 attractions (1 line each)
+- 2 local hidden gems
+- Best area to stay
+- 3 dishes to try
+- Visa info for Indian passport holders
+- Transport options (metro/bus/taxi)
+- 2 cultural etiquette tips
+Keep response under 350 words. Be concise.", agent="Expert Travel Destination Researcher", status="started"
+
