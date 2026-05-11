@@ -1,0 +1,8 @@
+# backend/.gitignore mein yeh daalo
+.local/
+*.log
+*.err.log
+*.out.log
+output/
+__pycache__/
+.env
