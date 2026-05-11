@@ -1,10 +1,10 @@
 """
-Flask API backend for the AI Trip Planner frontend.
+FastAPI backend for the AI Trip Planner frontend.
 Exposes the 6-agent CrewAI pipeline over HTTP.
 
 Run:
-    pip install flask flask-cors
-    python app.py
+    pip install fastapi uvicorn
+    uvicorn app:app --reload
 """
 
 import os
@@ -18,8 +18,12 @@ if _BASE not in sys.path:
 import threading
 import logging
 from datetime import datetime
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
+from typing import Optional, Dict, Any
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -31,8 +35,15 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-app = Flask(__name__, static_folder='frontend', static_url_path='')
-CORS(app)
+app = FastAPI(title="AI Trip Planner API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ── Create output folder at startup ──────────────────────────────────────────
 import pathlib
@@ -40,39 +51,30 @@ pathlib.Path(os.path.join(_BASE, "output")).mkdir(parents=True, exist_ok=True)
 log.info(f"Output folder ready: {os.path.join(_BASE, 'output')}")
 
 # ── In-memory job store ───────────────────────────────────────────────────────
-# IMPORTANT: This dict is process-scoped.
-# Flask debug=True uses a Werkzeug reloader that forks TWO processes.
-# The parent process stores jobs; child process handles requests → always 404.
-# FIX: run with use_reloader=False (see bottom of file).
 jobs: dict = {}
-jobs_lock = threading.Lock()          # thread-safe reads/writes
+jobs_lock = threading.Lock()
 
 
 # ── Pipeline worker ───────────────────────────────────────────────────────────
-
 def run_pipeline_job(job_id: str, trip_details: dict) -> None:
-    """
-    Run the CrewAI pipeline in a background thread.
-    Auto-retries up to 3 times on rate-limit (429) errors with backoff.
-    """
     log.info(f"[{job_id}] Pipeline started")
 
     with jobs_lock:
         jobs[job_id]["status"] = "running"
 
     MAX_RETRIES = 3
-    BACKOFF     = [30, 60, 90]   # seconds to wait before each retry
+    BACKOFF     = [30, 60, 90]
 
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            from crew import run_trip_planner
+            from agents.crew import run_trip_planner
             result = run_trip_planner(trip_details)
 
             with jobs_lock:
                 jobs[job_id]["status"] = "done"
                 jobs[job_id]["result"] = result
             log.info(f"[{job_id}] Pipeline finished successfully (attempt {attempt})")
-            return   # success — exit retry loop
+            return
 
         except Exception as e:
             err_str = str(e)
@@ -92,7 +94,6 @@ def run_pipeline_job(job_id: str, trip_details: dict) -> None:
                 log.info(f"[{job_id}] Retrying now (attempt {attempt+1})...")
 
             else:
-                # Non-rate-limit error OR exhausted retries
                 log.error(f"[{job_id}] Pipeline failed after {attempt} attempt(s): {e}", exc_info=True)
                 with jobs_lock:
                     jobs[job_id]["status"] = "error"
@@ -100,13 +101,8 @@ def run_pipeline_job(job_id: str, trip_details: dict) -> None:
                 return
 
 
-# ── Routes ────────────────────────────────────────────────────────────────────
-
-
 # ── City → IATA / Station code lookup ────────────────────────────────────────
-# Common Indian + international airport IATA codes
 CITY_TO_IATA = {
-    # India
     "new delhi": "DEL", "delhi": "DEL", "indira gandhi": "DEL",
     "mumbai": "BOM", "bombay": "BOM",
     "bangalore": "BLR", "bengaluru": "BLR",
@@ -116,7 +112,6 @@ CITY_TO_IATA = {
     "jaipur": "JAI", "lucknow": "LKO", "kochi": "COK",
     "amritsar": "ATQ", "varanasi": "VNS", "bhubaneswar": "BBI",
     "chandigarh": "IXC", "srinagar": "SXR", "leh": "IXL",
-    # International
     "paris": "CDG", "france": "CDG",
     "london": "LHR", "uk": "LHR", "england": "LHR",
     "dubai": "DXB", "uae": "DXB",
@@ -162,7 +157,6 @@ CITY_TO_IATA = {
     "buenos aires": "EZE", "argentina": "EZE",
 }
 
-# Common Indian railway station codes
 CITY_TO_STATION = {
     "new delhi": "NDLS", "delhi": "NDLS",
     "mumbai": "CSTM", "bombay": "BCT", "mumbai central": "BCT",
@@ -188,21 +182,15 @@ CITY_TO_STATION = {
     "ranchi": "RNC", "raipur": "R",
 }
 
-
 def city_to_iata(city: str) -> str:
-    """Convert city name to IATA airport code."""
     city_lower = city.lower().strip()
-    # Direct match
     for k, v in CITY_TO_IATA.items():
         if k in city_lower or city_lower in k:
             return v
-    # Fallback: return first 3 letters uppercased (Amadeus/Serper will handle it)
     words = city.strip().split()
     return words[0][:3].upper() if words else "DEL"
 
-
 def city_to_station(city: str) -> str:
-    """Convert city name to Indian railway station code."""
     city_lower = city.lower().strip()
     for k, v in CITY_TO_STATION.items():
         if k in city_lower or city_lower in k:
@@ -210,46 +198,37 @@ def city_to_station(city: str) -> str:
     words = city.strip().split()
     return words[0][:4].upper() if words else "NDLS"
 
+class TripPlanRequest(BaseModel):
+    destination: str = "Paris, France"
+    origin_city: str = "New Delhi"
+    travel_mode: str = "flight"
+    dep_date: Optional[str] = None
+    travel_dates: Optional[str] = ""
+    num_travellers: Optional[int] = 2
+    budget_inr: Optional[int] = 150000
+    interests: Optional[str] = "sightseeing, food"
 
-@app.route("/api/plan", methods=["POST"])
-def plan():
-    """
-    Start a trip planning job.
+@app.post("/api/plan", status_code=202)
+def plan(request: TripPlanRequest):
+    dep_date_raw = request.dep_date if request.dep_date else datetime.now().strftime("%Y-%m-%d")
+    date_ymd = dep_date_raw.replace("-", "")
 
-    Body (JSON):
-        destination, origin_city, travel_dates, num_travellers,
-        budget_inr, interests, travel_mode, origin_iata, dest_iata,
-        origin_station, dest_station, date_yyyymmdd
+    auto_origin_iata = city_to_iata(request.origin_city)
+    auto_dest_iata = city_to_iata(request.destination)
+    auto_origin_station = city_to_station(request.origin_city)
+    auto_dest_station = city_to_station(request.destination)
 
-    Returns: { "job_id": "job_YYYYMMDDHHMMSSXXXXXX" }
-    """
-    data = request.get_json(force=True)
-    if not data:
-        return jsonify({"error": "Empty or invalid JSON body"}), 400
-
-    destination  = str(data.get("destination",  "Paris, France"))
-    origin_city  = str(data.get("origin_city",  "New Delhi"))
-    travel_mode  = str(data.get("travel_mode",  "flight"))
-    dep_date_raw = str(data.get("dep_date",     datetime.now().strftime("%Y-%m-%d")))
-    date_ymd     = dep_date_raw.replace("-", "")
-
-    # Auto-derive IATA and station codes from city names — user never needs to type these
-    auto_origin_iata    = city_to_iata(origin_city)
-    auto_dest_iata      = city_to_iata(destination)
-    auto_origin_station = city_to_station(origin_city)
-    auto_dest_station   = city_to_station(destination)
-
-    log.info(f"Auto-resolved: {origin_city} → IATA:{auto_origin_iata} / STN:{auto_origin_station}")
-    log.info(f"Auto-resolved: {destination} → IATA:{auto_dest_iata} / STN:{auto_dest_station}")
+    log.info(f"Auto-resolved: {request.origin_city} → IATA:{auto_origin_iata} / STN:{auto_origin_station}")
+    log.info(f"Auto-resolved: {request.destination} → IATA:{auto_dest_iata} / STN:{auto_dest_station}")
 
     trip_details = {
-        "destination":    destination,
-        "origin_city":    origin_city,
-        "travel_dates":   str(data.get("travel_dates",   "")),
-        "num_travellers": int(data.get("num_travellers", 2)),
-        "budget_inr":     int(data.get("budget_inr",     150000)),
-        "interests":      str(data.get("interests",      "sightseeing, food")),
-        "travel_mode":    travel_mode,
+        "destination":    request.destination,
+        "origin_city":    request.origin_city,
+        "travel_dates":   request.travel_dates,
+        "num_travellers": request.num_travellers,
+        "budget_inr":     request.budget_inr,
+        "interests":      request.interests,
+        "travel_mode":    request.travel_mode,
         "origin_iata":    auto_origin_iata,
         "dest_iata":      auto_dest_iata,
         "origin_station": auto_origin_station,
@@ -259,7 +238,6 @@ def plan():
 
     job_id = f"job_{datetime.now().strftime('%Y%m%d%H%M%S%f')}"
 
-    # Store job BEFORE starting thread — avoids race condition
     with jobs_lock:
         jobs[job_id] = {
             "status":  "queued",
@@ -279,67 +257,58 @@ def plan():
     )
     thread.start()
 
-    return jsonify({"job_id": job_id}), 202
+    return {"job_id": job_id}
 
 
-@app.route("/api/status/<job_id>", methods=["GET"])
+@app.get("/api/status/{job_id}")
 def status(job_id: str):
-    """
-    Poll job status.
-    Returns: { "status": "queued|running|done|error", "result": "...", "error": "..." }
-    """
     with jobs_lock:
         job = jobs.get(job_id)
 
     if not job:
-        # Debug info to help diagnose stale job_id issues
         with jobs_lock:
             known = list(jobs.keys())
         log.warning(f"Job not found: {job_id} | Known jobs: {known}")
-        return jsonify({
-            "error":      "Job not found",
-            "job_id":     job_id,
-            "known_jobs": known,   # helpful during development
-        }), 404
+        return JSONResponse(
+            status_code=404,
+            content={
+                "error":      "Job not found",
+                "job_id":     job_id,
+                "known_jobs": known,
+            }
+        )
 
-    return jsonify(job)
+    return job
 
 
-@app.route("/api/jobs", methods=["GET"])
+@app.get("/api/jobs")
 def list_jobs():
-    """List all jobs (dev helper endpoint)."""
     with jobs_lock:
-        return jsonify({
+        return {
             "count": len(jobs),
             "jobs":  {jid: {"status": j["status"], "created": j.get("created")}
                       for jid, j in jobs.items()},
-        })
+        }
 
 
-@app.route("/", methods=["GET"])
-def index():
-    """Serve the frontend SPA."""
-    return app.send_static_file("index.html")
-
-
-@app.route("/api/health", methods=["GET"])
+@app.get("/api/health")
 def health():
-    return jsonify({
+    return {
         "status":    "ok",
         "timestamp": datetime.now().isoformat(),
         "jobs_in_memory": len(jobs),
-    })
+    }
 
 
-# ── Entry point ───────────────────────────────────────────────────────────────
+# Serve static files last to prevent masking API routes
+app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
 
 if __name__ == "__main__":
-    log.info("Starting VoyageAI Flask backend on http://localhost:5000")
-    log.info("Jobs store is process-scoped — do NOT run with use_reloader=True")
-    app.run(
+    import uvicorn
+    log.info("Starting VoyageAI FastAPI backend")
+    uvicorn.run(
+        "app:app",
         host="0.0.0.0",
-        port=5000,
-        debug=True,
-        use_reloader=False,    # ← THE KEY FIX: prevents Werkzeug from forking
-        threaded=True,         # allow concurrent poll requests during pipeline run
+        port=int(os.environ.get("PORT", 5000)),
+        reload=False
     )

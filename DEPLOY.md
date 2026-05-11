@@ -117,13 +117,13 @@ trip_planner/
 ├── .env.example        ← API key template (commit this)
 ├── .env                ← Your actual keys (NEVER commit)
 ├── requirements.txt    ← Python dependencies
-├── app.py              ← Flask backend (serves frontend too)
+├── app.py              ← FastAPI backend (serves frontend too)
 ├── crew.py             ← CrewAI pipeline
 ├── agents/             ← 6 agent definitions
 ├── tasks/              ← Task definitions
 ├── tools/              ← API tool wrappers
 └── frontend/
-    └── index.html      ← Served at / by Flask
+    └── index.html      ← Served at / by FastAPI
 ```
 
 ---
@@ -132,11 +132,10 @@ trip_planner/
 
 **1. Workers must be 1**
 CrewAI job state is stored in-memory. Multiple workers would lose job IDs.
-The Gunicorn command uses `--workers 1 --threads 8` — do NOT change this.
+The Uvicorn command uses `--workers 1` — do NOT change this.
 
-**2. Timeout must be 600s**
-The 6-agent pipeline can take 5–10 minutes. If you set a shorter timeout,
-requests will be killed mid-pipeline. Always use `--timeout 600`.
+**2. Pipeline Execution Time**
+The 6-agent pipeline can take 5–10 minutes. Uvicorn default behavior should handle this, but be aware that some free hosting providers may have reverse proxy timeouts.
 
 **3. .env file is NEVER committed**
 `.gitignore` and `.dockerignore` both exclude `.env`.

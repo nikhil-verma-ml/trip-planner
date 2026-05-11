@@ -221,7 +221,7 @@ footer a{color:var(--teal);text-decoration:none}
     </div>
   </div>
   <div class="guide-stats">
-    <div class="stat-pill"><span class="si">✈</span><div><div class="sv" id="statFlight">—</div><div class="sl">Best deal</div></div></div>
+    <div class="stat-pill"><span class="si">✈</span><div><div class="sv" id="statFlight">—</div><div class="sl">Ticket Range</div></div></div>
     <div class="stat-pill"><span class="si">🏨</span><div><div class="sv" id="statHotel">—</div><div class="sl">Recommended hotel</div></div></div>
     <div class="stat-pill"><span class="si">🌡</span><div><div class="sv" id="statWeather">—</div><div class="sl">Weather</div></div></div>
     <div class="stat-pill"><span class="si">💰</span><div><div class="sv" id="statBudget">—</div><div class="sl">Grand total</div></div></div>
@@ -253,7 +253,6 @@ function getFormData(){
     interests:      document.getElementById('interests').value.trim(),
     travel_mode:    currentMode,
     dep_date:       document.getElementById('depDate').value,
-    // IATA & station codes are auto-resolved on the backend from city names
   };
 }
 
@@ -323,23 +322,27 @@ function renderGuide(data,text){
 
 function toggleSec(h){const b=h.nextElementSibling;const t=h.querySelector('.gs-toggle');b.classList.toggle('collapsed');t.style.transform=b.classList.contains('collapsed')?'rotate(-90deg)':'';}
 
-function parseSections(text){
-  const map={};
-  [{k:'research',re:/##\s*Destination Research([\s\S]*?)(?=\n##\s*|\n---\s*\n##\s*|$)/i},
-   {k:'weather', re:/##\s*Weather Forecast([\s\S]*?)(?=\n##\s*|\n---\s*\n##\s*|$)/i},
-   {k:'hotels',  re:/##\s*Hotel Recommendations?([\s\S]*?)(?=\n##\s*|\n---\s*\n##\s*|$)/i},
-   {k:'tickets', re:/##\s*Ticket Options?([\s\S]*?)(?=\n##\s*|\n---\s*\n##\s*|$)/i},
-   {k:'itinerary',re:/##\s*Day-by-Day Itinerary([\s\S]*?)(?=\n##\s*|\n---\s*\n##\s*|$)/i},
-   {k:'budget',  re:/##\s*Budget Breakdown([\s\S]*?)(?=\n##\s*|\n---\s*\n##\s*|$)/i},
-  ].forEach(p=>{const m=text.match(p.re);map[p.k]=m?m[1].trim():'';});
-  if(Object.values(map).every(v=>!v)){const parts=text.split(/\n---\n/);['research','weather','hotels','tickets','itinerary','budget'].forEach((k,i)=>{map[k]=parts[i]?parts[i].trim():'';}); }
+function parseSections(text) {
+  const map = {};
+  [{k:'research', re:/##\s*(?:Destination )?Research([\s\S]*?)(?=\n##\s*|\n---\s*\n##\s*|$)/i},
+   {k:'weather', re:/##\s*Weather(?: Forecast)?([\s\S]*?)(?=\n##\s*|\n---\s*\n##\s*|$)/i},
+   {k:'hotels',  re:/##\s*Hotel([\s\S]*?)(?=\n##\s*|\n---\s*\n##\s*|$)/i},
+   {k:'tickets', re:/##\s*(?:Ticket|Flight|Train|Transport)([\s\S]*?)(?=\n##\s*|\n---\s*\n##\s*|$)/i},
+   {k:'itinerary',re:/##\s*(?:Day-by-Day )?Itinerary([\s\S]*?)(?=\n##\s*|\n---\s*\n##\s*|$)/i},
+   {k:'budget',  re:/##\s*Budget([\s\S]*?)(?=\n##\s*|\n---\s*\n##\s*|$)/i},
+  ].forEach(p => { const m = text.match(p.re); map[p.k] = m ? m[1].trim() : ''; });
+  
+  if (Object.values(map).every(v => !v)) {
+    const parts = text.split(/\n---\n/);
+    ['research','weather','hotels','tickets','itinerary','budget'].forEach((k,i) => {
+      map[k] = parts[i] ? parts[i].trim() : '';
+    }); 
+  }
   return map;
 }
 
 function estimateNights(d){
   if(!d)return 7;
-  // Try to find two dates and diff them
-  // Format: "15 Sep 2025 – 22 Sep 2025" or "15-22 Sep" or "Sep 15 - Sep 22"
   const months={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
   const parts=d.toLowerCase().split(/[–—\-to]+/).map(s=>s.trim()).filter(Boolean);
   if(parts.length>=2){
@@ -347,9 +350,8 @@ function estimateNights(d){
     const d1=extractDay(parts[0]);
     const d2=extractDay(parts[parts.length-1]);
     if(d1&&d2&&d2>d1)return d2-d1+1;
-    if(d1&&d2&&d2<d1)return(30-d1)+d2+1; // month wrap
+    if(d1&&d2&&d2<d1)return(30-d1)+d2+1; 
   }
-  // Fallback: look for two numbers
   const nums=d.match(/\b(\d{1,2})\b/g);
   if(nums&&nums.length>=2){
     const a=parseInt(nums[0]),b=parseInt(nums[nums.length-1]);
@@ -358,15 +360,25 @@ function estimateNights(d){
   return 7;
 }
 
-function fillStats(s,data){
-  const tk=s.tickets||'';const pm=tk.match(/(?:₹|inr)[^\d]*([\d,]+)/i);
-  document.getElementById('statFlight').textContent=pm?'₹'+pm[1]:data.travel_mode==='train'?'Train found':'Flight found';
-  const ht=s.hotels||'';const rm=ht.match(/recommended.*?:\s*([^\n(]+)/i);
-  document.getElementById('statHotel').textContent=rm?rm[1].trim().substring(0,22):'3 options found';
-  const wt=s.weather||'';const tm=wt.match(/(\d+)°C\s*[–-]\s*(\d+)°C/);
-  document.getElementById('statWeather').textContent=tm?tm[1]+'–'+tm[2]+'°C':'Checked ✓';
-  const bt=s.budget||'';const gm=bt.match(/grand total[^\d]*([\d,]+)/i);
-  document.getElementById('statBudget').textContent=gm?'₹'+gm[1]:'Calculated';
+function fillStats(s, data) {
+  const tk = s.tickets || '';
+  const allPrices = [...tk.matchAll(/(?:₹|INR)\s*([\d,]+)/gi)].map(m => parseInt(m[1].replace(/,/g, ''))).filter(n => !isNaN(n));
+  if (allPrices.length > 0) {
+    const min = Math.min(...allPrices);
+    const max = Math.max(...allPrices);
+    document.getElementById('statFlight').textContent = min === max ? `₹${min.toLocaleString()}` : `₹${min.toLocaleString()} – ₹${max.toLocaleString()}`;
+  } else {
+    document.getElementById('statFlight').textContent = data.travel_mode === 'train' ? 'Train found' : 'Flight found';
+  }
+
+  const ht = s.hotels || ''; const rm = ht.match(/recommended.*?:\s*([^\n(]+)/i);
+  document.getElementById('statHotel').textContent = rm ? rm[1].trim().substring(0, 22) : '3 options found';
+  
+  const wt = s.weather || ''; const tm = wt.match(/(\d+)°C\s*[–-]\s*(\d+)°C/);
+  document.getElementById('statWeather').textContent = tm ? tm[1] + '–' + tm[2] + '°C' : 'Checked ✓';
+  
+  const bt = s.budget || ''; const gm = bt.match(/grand total[^\d]*([\d,]+)/i) || bt.match(/\*\*([\d,]+)\*\*/i);
+  document.getElementById('statBudget').textContent = gm ? '₹' + gm[1] : 'Calculated';
 }
 
 /* ── Destination Research ── */
@@ -434,18 +446,18 @@ function renderHotels(el,text){
   const recName=recM?recM[1].toLowerCase().trim():'';
   let html='<div class="hotel-grid">';
   blocks.forEach(b=>{
-    const nm=b.match(/Hotel Name.*?:\s*(.+)/i);
+    const nm=b.match(/Hotel Name.*?:\s*(.+)/i) || b.match(/(?:Hotel\s*)?Name.*?:\s*(.+)/i);
     const sm=b.match(/(\d)-star/i);
     const lm=b.match(/Location.*?:\s*(.+)/i);
     const pm=b.match(/₹[\s]*([\d,]+)/);
     const rm=b.match(/([\d.]+)\/10/);
     const am=b.match(/Amenities.*?:\s*(.+)/i);
     const wm=b.match(/Why.*?:\s*(.+)/i);
-    const name=nm?nm[1].replace(/\(\d-star\)/i,'').trim():'Hotel';
+    const name=nm?nm[1].replace(/\(\d-star\)/i,'').trim():'Hotel Option';
     const stars=sm?'★'.repeat(parseInt(sm[1]))+'☆'.repeat(5-parseInt(sm[1])):'★★★';
     const isRec=recName&&name.toLowerCase().includes(recName.substring(0,15));
     const tags=am?am[1].split(/[,;]/).slice(0,4).map(t=>'<span class="htag">'+escHtml(t.trim())+'</span>').join(''):'';
-    html+='<div class="hotel-card'+(isRec?' rec':'')+'"><div class="hotel-head"><div class="hotel-name">'+escHtml(name)+(isRec?'<span class="rec-badge">★ Top Pick</span>':'')+'</div><div class="hotel-stars">'+stars+'</div><div class="hotel-loc">📍 '+(lm?escHtml(lm[1].substring(0,40)):'Paris')+'</div></div><div class="hotel-body"><div class="hotel-price">'+(pm?'₹'+pm[1]:'—')+'<span>/night</span></div>'+(rm?'<div class="hotel-rating">⭐ '+rm[1]+'/10</div>':'')+'<div class="hotel-tags">'+tags+'</div>'+(wm?'<p style="font-size:.77rem;color:var(--mist);margin-top:.45rem;line-height:1.5">'+escHtml(wm[1].substring(0,120))+'</p>':'')+'</div></div>';
+    html+='<div class="hotel-card'+(isRec?' rec':'')+'"><div class="hotel-head"><div class="hotel-name">'+escHtml(name)+(isRec?'<span class="rec-badge">★ Top Pick</span>':'')+'</div><div class="hotel-stars">'+stars+'</div><div class="hotel-loc">📍 '+(lm?escHtml(lm[1].substring(0,40)):'Destination')+'</div></div><div class="hotel-body"><div class="hotel-price">'+(pm?'₹'+pm[1]:'—')+'<span>/night</span></div>'+(rm?'<div class="hotel-rating">⭐ '+rm[1]+'/10</div>':'')+'<div class="hotel-tags">'+tags+'</div>'+(wm?'<p style="font-size:.77rem;color:var(--mist);margin-top:.45rem;line-height:1.5">'+escHtml(wm[1].substring(0,120))+'</p>':'')+'</div></div>';
   });
   html+='</div>';
   el.innerHTML=html;
@@ -453,32 +465,20 @@ function renderHotels(el,text){
 
 /* ── Tickets ── */
 function renderTickets(el,text){
-  // Best pick line
   const bm = text.match(/best pick.*?[:\-]\s*([^\n]+)/i);
-
-  // Parse numbered ticket lines: "1. Name | details | ₹price | Xh | dep→arr"
   const allLines = text.split('\n').map(l=>l.trim()).filter(l=>l.length>8);
   const entries = [];
   allLines.forEach(line => {
-    if(!/^\d+[.)]/i.test(line)) return;          // must start with "1." or "1)"
+    if(!/^\d+[.)]/i.test(line)) return;
     const num = (line.match(/^(\d+)/)||[])[1];
-
-    // Extract price
     const pm = line.match(/(?:₹|INR)\s*([\d,]+)/i);
-    // Duration
     const dm = line.match(/(\d+(?:\.\d+)?)\s*(?:hours?|h(?:rs?)?)\b/i);
-    // Times
     const tim = line.match(/\b(\d{1,2}:\d{2})\b/g);
-    // Train number (5-digit Indian train numbers)
     const trainNum = (line.match(/\b([1-9]\d{4})\b/)||[])[1];
-    // Flight code e.g. AI-123, 6E234, AI 302
     const flightCode = (line.match(/\b([A-Z]{2}|[0-9][A-Z])[- ]?(\d{2,4})\b/)||[]);
-    // Stops
     const nonstop = /non.?stop|direct/i.test(line);
-    const stopsM = line.match(/(\d+)\s*stop/i);
-    // Class
+    const stopsM = line.match(/(\d+)\s*stop/i) || line.match(/Stops:\s*(\d+)/i);
     const classM = (line.match(/\b(SL|3A|2A|1A|CC|EC)\b/i)||[])[0];
-    // Name: strip number prefix and trailing technical details
     let name = line
       .replace(/^\d+[.)]\s*/,'')
       .replace(/[-–|].*$/,'')
@@ -487,12 +487,10 @@ function renderTickets(el,text){
       .replace(/\b\d{5}\b/g,'')
       .replace(/\b[A-Z]{2}[-\s]?\d{2,4}\b/g,'')
       .replace(/(?:₹|INR|inr).*/gi,'')
+      .replace(/Airline\/Train:/i,'')
       .trim();
     if(name.length > 45) name = name.substring(0,45).trim();
-
-    // Route from text e.g. "DEL to AYO" or "NDLS to AYJ"
     const routeM = line.match(/\b([A-Z]{3,4})\s*(?:to|→|->)\s*([A-Z]{3,4})\b/i);
-
     entries.push({
       num, name: name||('Option '+num),
       price: pm ? pm[1] : null,
@@ -519,8 +517,6 @@ function renderTickets(el,text){
     const icon   = isTrainMode ? '🚆' : '✈';
 
     html += '<div class="ticket-card'+(isBest?' best':'')+'"">';
-
-    // Line 1: icon + name + code + badge
     html += '<div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">';
     html += '<span style="font-size:1.1rem">'+icon+'</span>';
     html += '<span style="font-weight:600;font-size:.88rem;color:var(--ink)">'+escHtml(e.name)+'</span>';
@@ -529,7 +525,6 @@ function renderTickets(el,text){
     if(isBest) html += '<span class="best-badge">✓ Best</span>';
     html += '</div>';
 
-    // Line 2: time range OR route
     html += '<div style="display:flex;align-items:center;gap:.5rem;margin-top:.35rem;font-size:.82rem;color:var(--mist)">';
     if(e.times.length>=2){
       html += '<span style="font-weight:500;color:var(--ink)">'+e.times[0]+'</span>';
@@ -545,7 +540,6 @@ function renderTickets(el,text){
     }
     html += '</div>';
 
-    // Line 3: price
     if(e.price){
       html += '<div style="margin-top:.35rem"><span style="font-size:1rem;font-weight:700;color:var(--teal)">₹'+e.price+'</span></div>';
     }
@@ -562,26 +556,29 @@ function renderTickets(el,text){
 }
 
 /* ── Itinerary ── */
-function renderItinerary(el,text){
-  const days=text.split(/\n(?=Day \d+:)/i).filter(b=>b.trim()&&/day \d/i.test(b));
-  if(!days.length){el.innerHTML='<div class="raw">'+mdToHtml(text)+'</div>';return;}
-  let html='';
-  days.forEach(block=>{
-    const tm=block.match(/^Day (\d+):\s*(.+?)(?:\s*\((.+?)\))?$/im);
-    const title=tm?'Day '+tm[1]+': '+tm[2].trim():'Day';
-    const date=tm&&tm[3]?tm[3].trim():'';
-    const M=block.match(/🌅\s*\*{0,2}Morning\*{0,2}:?\s*(.+?)(?=☀|🌙|\n🌅|$)/s);
-    const A=block.match(/☀\s*\*{0,2}Afternoon\*{0,2}:?\s*(.+?)(?=🌙|\n🌅|$)/s);
-    const E=block.match(/🌙\s*\*{0,2}Evening\*{0,2}:?\s*(.+?)(?=Practical|$)/s);
-    const T=block.match(/Practical Tips?:?\s*([\s\S]+?)(?=\n\nDay|$)/i);
-    html+='<div class="day-card"><div class="day-head"><div class="day-title">'+escHtml(title)+'</div>'+(date?'<div class="day-date">'+escHtml(date)+'</div>':'')+'</div><div class="day-body">';
-    if(M)html+='<div class="tslot"><div class="ticon">🌅</div><div class="tcontent"><div class="tlabel">Morning</div><div class="ttext">'+escHtml(M[1].trim().substring(0,280))+'</div></div></div>';
-    if(A)html+='<div class="tslot"><div class="ticon">☀</div><div class="tcontent"><div class="tlabel">Afternoon</div><div class="ttext">'+escHtml(A[1].trim().substring(0,280))+'</div></div></div>';
-    if(E)html+='<div class="tslot"><div class="ticon">🌙</div><div class="tcontent"><div class="tlabel">Evening</div><div class="ttext">'+escHtml(E[1].trim().substring(0,280))+'</div></div></div>';
-    if(T){const tips=T[1].match(/[-*]\s*(.+)/g);if(tips&&tips.length)html+='<div class="tips-box">💡 '+tips.slice(0,3).map(t=>escHtml(t.replace(/^[-*]\s*/,''))).join(' · ')+'</div>';}
-    html+='</div></div>';
+function renderItinerary(el, text) {
+  const days = text.split(/\n(?=(?:##\s*)?Day \d+:)/i).filter(b => b.trim() && /day \d/i.test(b));
+  if (!days.length) { el.innerHTML = '<div class="raw">' + mdToHtml(text) + '</div>'; return; }
+  
+  let html = '';
+  days.forEach(block => {
+    const tm = block.match(/^(?:##\s*)?Day (\d+):\s*(.+?)(?:\s*\((.+?)\))?$/im);
+    const title = tm ? 'Day ' + tm[1] + ': ' + tm[2].trim() : 'Day';
+    const date = tm && tm[3] ? tm[3].trim() : '';
+    
+    const M = block.match(/(?:🌅)?\s*\*{0,2}Morning\*{0,2}:?\s*(.+?)(?=☀|🌙|\n(?:🌅|Afternoon|Evening)|$)/is);
+    const A = block.match(/(?:☀)?\s*\*{0,2}Afternoon\*{0,2}:?\s*(.+?)(?=🌙|\n(?:🌅|Evening)|$)/is);
+    const E = block.match(/(?:🌙)?\s*\*{0,2}Evening\*{0,2}:?\s*(.+?)(?=Practical|$)/is);
+    const T = block.match(/Practical Tips?:?\s*([\s\S]+?)(?=\n\n(?:##\s*)?Day|$)/i);
+
+    html += '<div class="day-card"><div class="day-head"><div class="day-title">' + escHtml(title) + '</div>' + (date ? '<div class="day-date">' + escHtml(date) + '</div>' : '') + '</div><div class="day-body">';
+    if (M) html += '<div class="tslot"><div class="ticon">🌅</div><div class="tcontent"><div class="tlabel">Morning</div><div class="ttext">' + escHtml(M[1].trim().substring(0, 280)) + '</div></div></div>';
+    if (A) html += '<div class="tslot"><div class="ticon">☀</div><div class="tcontent"><div class="tlabel">Afternoon</div><div class="ttext">' + escHtml(A[1].trim().substring(0, 280)) + '</div></div></div>';
+    if (E) html += '<div class="tslot"><div class="ticon">🌙</div><div class="tcontent"><div class="tlabel">Evening</div><div class="ttext">' + escHtml(E[1].trim().substring(0, 280)) + '</div></div></div>';
+    if (T) { const tips = T[1].match(/[-*]\s*(.+)/g); if (tips && tips.length) html += '<div class="tips-box">💡 ' + tips.slice(0, 3).map(t => escHtml(t.replace(/^[-*]\s*/, ''))).join(' · ') + '</div>'; }
+    html += '</div></div>';
   });
-  el.innerHTML=html;
+  el.innerHTML = html;
 }
 
 /* ── Budget ── */
@@ -595,17 +592,25 @@ function renderBudget(el,text){
     html+='</tr></thead><tbody>';
     rows.slice(1).forEach(row=>{
       const cells=row.split('|').filter(c=>c.trim());
-      html+='<tr>';cells.forEach(c=>{html+='<td>'+escHtml(c.trim())+'</td>';});html+='</tr>';
+      // Bold handling for the Grand Total row
+      const isTotalRow = row.toLowerCase().includes('grand total') || row.includes('**');
+      html+='<tr class="'+(isTotalRow ? 'grow' : '')+'">';
+      cells.forEach((c, i)=>{
+        let val = escHtml(c.trim().replace(/\*\*/g, ''));
+        if (isTotalRow && i > 0 && !val.includes('₹')) val = '₹' + val; // Ensure ₹ sign
+        html+='<td>'+(isTotalRow ? '<strong>'+val+'</strong>' : val)+'</td>';
+      });
+      html+='</tr>';
     });
     html+='</tbody>';
+    
+    // Fallback for subtotal outside table (just in case LLM disobeys)
     const sm=text.match(/Subtotal[:\s]*([\d,]+)/i);
     const cm=text.match(/[Cc]ontingency[^:]*:\s*(?:\+)?([\d,]+)/);
-    const gm=text.match(/Grand Total[:\s]*([\d,]+)/i);
-    if(sm||gm){
+    if(sm || cm){
       html+='<tfoot>';
       if(sm)html+='<tr class="trow"><td colspan="3">Subtotal</td><td>₹'+sm[1]+'</td></tr>';
       if(cm)html+='<tr class="trow"><td colspan="3">+ 10% Contingency</td><td>₹'+cm[1]+'</td></tr>';
-      if(gm)html+='<tr class="grow"><td colspan="3"><strong>Grand Total</strong></td><td><strong>₹'+gm[1]+'</strong></td></tr>';
       html+='</tfoot>';
     }
     html+='</table></div>';
@@ -668,29 +673,26 @@ Packing Checklist:
 
 ## Hotel Recommendations
 
-1. Hotel Name and Star Rating: Hotel du Temps (3-star)
-Location / Neighbourhood: 11 Rue De Montholon, 75009 Paris
-Price per Night (approx.): ₹10,300
-Key Amenities: WiFi, breakfast, 24-hour reception, luggage storage
-Guest Rating: 8.4/10
-Booking Platform: Booking.com, Expedia
-Why it's a Good Fit: Central location near Grands Boulevards, excellent value for money.
+1. Hotel Name: Hotel du Temps (3-star)
+Location: 11 Rue De Montholon, 75009 Paris
+Price: ₹10,300
+Amenities: WiFi, breakfast, 24-hour reception, luggage storage
+Guest rating: 8.4/10
+Why it's a good fit: Central location near Grands Boulevards, excellent value for money.
 
-2. Hotel Name and Star Rating: Hotel Paradis (3-star)
-Location / Neighbourhood: 41 Rue Des Petits Hotels, 75010 Paris
-Price per Night (approx.): ₹11,500
-Key Amenities: WiFi, breakfast, attached bathroom, 24-hour reception
-Guest Rating: 8.1/10
-Booking Platform: Booking.com
-Why it's a Good Fit: Boutique charm near Gare de l'Est, walking distance to restaurants.
+2. Hotel Name: Hotel Paradis (3-star)
+Location: 41 Rue Des Petits Hotels, 75010 Paris
+Price: ₹11,500
+Amenities: WiFi, breakfast, attached bathroom, 24-hour reception
+Guest rating: 8.1/10
+Why it's a good fit: Boutique charm near Gare de l'Est, walking distance to restaurants.
 
-3. Hotel Name and Star Rating: Le 5 Particulier (4-star)
-Location / Neighbourhood: 37 Avenue De Saxe, 75007 Paris
-Price per Night (approx.): ₹14,200
-Key Amenities: WiFi, breakfast, fitness centre, spa
-Guest Rating: 9.1/10
-Booking Platform: Booking.com
-Why it's a Good Fit: Luxurious stay near the Eiffel Tower with top-notch amenities.
+3. Hotel Name: Le 5 Particulier (4-star)
+Location: 37 Avenue De Saxe, 75007 Paris
+Price: ₹14,200
+Amenities: WiFi, breakfast, fitness centre, spa
+Guest rating: 9.1/10
+Why it's a good fit: Luxurious stay near the Eiffel Tower with top-notch amenities.
 
 Recommended Pick: Hotel du Temps (3-star)
 
@@ -698,9 +700,9 @@ Recommended Pick: Hotel du Temps (3-star)
 
 ## Ticket Options
 
-1. Air India AI123 - Total price (INR) - ₹74,926 - Journey duration 10 hours 30 minutes - 0 stops - Departure 02:35 - Arrival 08:05
-2. Air France AF456 - Total price (INR) - ₹1,23,698 - Journey duration 10 hours 35 minutes - 0 stops - Departure 01:15 - Arrival 06:50
-3. IndiGo 6E123 - Total price (INR) - ₹43,576 - Journey duration 14 hours 30 minutes - 1 stop - Departure 08:00 - Arrival 22:30
+1. Airline/Train: Air India | Duration: 10h | Price: ₹74,926 | Times: 02:35-08:05 | Stops: 0
+2. Airline/Train: Air France | Duration: 10h | Price: ₹1,23,698 | Times: 01:15-06:50 | Stops: 0
+3. Airline/Train: IndiGo | Duration: 14h | Price: ₹43,576 | Times: 08:00-22:30 | Stops: 1
 
 Best Pick: Air India AI123 — direct flight, competitive price, excellent service.
 
@@ -708,79 +710,33 @@ Best Pick: Air India AI123 — direct flight, competitive price, excellent servi
 
 ## Day-by-Day Itinerary
 
-Day 1: Arrival & First Impressions (15 Sep 2025)
+Day 1: Arrival & First Impressions
 🌅 Morning: Land at CDG, take RER B to Hotel du Temps (~50 mins). Check in, freshen up.
 ☀ Afternoon: Explore nearby Grands Boulevards. Grab croissants at a local café. Stroll to Palais Garnier.
 🌙 Evening: Head to Montmartre for dinner. Try escargots at a local bistro. Views from Sacré-Cœur.
-Practical Tips:
-- Validate your metro ticket before boarding.
-- Learn "Bonjour" and "Merci" for a warm welcome from locals.
+Practical Tips: Validate your metro ticket before boarding.
 
-Day 2: Iconic Paris (16 Sep 2025)
+Day 2: Iconic Paris
 🌅 Morning: Visit the Eiffel Tower early to avoid crowds. Metro Line 6 to Bir-Hakeim.
 ☀ Afternoon: Picnic at Champ de Mars. Visit Musée d'Orsay — world-class Impressionist art.
 🌙 Evening: Seine River cruise at sunset. Dinner at a riverside brasserie.
-Practical Tips:
-- Book Eiffel Tower tickets online in advance to skip queues.
-- The Paris Museum Pass saves time and money at major attractions.
-
-Day 3: Art & History (17 Sep 2025)
-🌅 Morning: Louvre Museum — allow 3 hours minimum. Metro Line 1 to Palais-Royal.
-☀ Afternoon: Palais-Royal gardens stroll. Visit the restored Notre-Dame Cathedral.
-🌙 Evening: Dinner in the Latin Quarter. Explore cobblestone streets and live music cafés.
-Practical Tips:
-- Download the Louvre app for a free self-guided audio tour.
-- Notre-Dame entry is free — dress modestly when visiting.
-
-Day 4: Montmartre & Monuments (18 Sep 2025)
-🌅 Morning: Montmartre walk — artist studios, street art, and Sacré-Cœur Basilica.
-☀ Afternoon: Arc de Triomphe — climb to the rooftop for 360° city views.
-🌙 Evening: Walk down the Champs-Élysées. Dinner at a classic Parisian brasserie.
-Practical Tips:
-- Take the Montmartre funicular to save the steep climb.
-- Pre-book Arc de Triomphe rooftop tickets online.
-
-Day 5: Markets & Parks (19 Sep 2025)
-🌅 Morning: Marché des Enfants Rouges — Paris's oldest covered market. Try crêpes and fresh cheese.
-☀ Afternoon: Stroll around Place des Vosges. Relax in the beautiful Luxembourg Gardens.
-🌙 Evening: Dinner near the gardens. Evening walk along the Seine at sunset.
-Practical Tips:
-- The market opens at 8:30 AM — arrive early for the freshest produce.
-- Bring cash for market vendors.
-
-Day 6: Versailles Day Trip (20 Sep 2025)
-🌅 Morning: RER C from Gare Montparnasse to Versailles (~35 mins). Palace opens at 9 AM.
-☀ Afternoon: Hall of Mirrors, Royal Chapel, and the stunning fountain gardens.
-🌙 Evening: Return to Paris. Farewell dinner at a Michelin-starred restaurant.
-Practical Tips:
-- Book palace tickets online to skip 2-hour queues.
-- Weekend fountain shows are spectacular — check the schedule.
-
-Day 7: Departure (22 Sep 2025)
-🌅 Morning: Final café breakfast. Last-minute souvenir shopping at a nearby boutique.
-☀ Afternoon: Check out by noon. RER B to CDG Airport (~50 mins).
-🌙 Evening: Depart from Charles de Gaulle Airport. Au revoir, Paris!
-Practical Tips:
-- Allow 3 hours before international departure.
-- Exchange leftover euros at the airport.
+Practical Tips: Book Eiffel Tower tickets online in advance to skip queues.
 
 ---
 
 ## Budget Breakdown
 
-| Category | Unit Cost (INR) | Units | Total (INR) |
-|----------|----------------|-------|------------|
-| Flights (×2 pax) | 37,463 | 2 | 74,926 |
-| Hotel (7 nights) | 10,300 | 7 | 72,100 |
-| Meals | 1,500 | 14 | 21,000 |
-| Local Transport | 200 | 7 | 1,400 |
-| Attractions | 1,500 | 6 | 9,000 |
-| Miscellaneous | 1,000 | 7 | 7,000 |
+| Category | Low (INR) | Medium (INR) | High (INR) |
+|---|---|---|---|
+| Flights/Trains | 43,576 | 74,926 | 123,698 |
+| Hotel (Total) | 72,100 | 80,500 | 99,400 |
+| Meals | 14,000 | 21,000 | 35,000 |
+| Local Transport | 1,000 | 1,400 | 3,000 |
+| Attractions | 5,000 | 9,000 | 15,000 |
+| Misc | 3,000 | 7,000 | 12,000 |
+| **Grand Total** | **138,676** | **193,826** | **288,098** |
 
-Subtotal: 185,426
-+10% Contingency: 18,543
-Grand Total: 203,969
-Budget status vs INR 150,000: Over by 53,969. Consider budget flights or shorter stay to reduce costs.`;}
+✅ Within budget for Low option, slightly over for Medium option.`;}
 
 function copyGuide(){navigator.clipboard.writeText(rawResult).then(()=>{const b=document.querySelector('.guide-btn:not(.primary)');b.textContent='✓ Copied!';setTimeout(()=>b.textContent='📋 Copy',2000);});}
 function showError(m){const e=document.getElementById('errorBanner');e.textContent='⚠ '+m;e.classList.add('show');e.scrollIntoView({behavior:'smooth'});}

@@ -3,10 +3,10 @@ services:
     name: voyageai-trip-planner
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 8 --timeout 600
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT --workers 1
     envVars:
       - key: GROQ_API_KEY
-        sync: false        # Set in Render dashboard
+        sync: false
       - key: SERPER_API_KEY
         sync: false
       - key: OPENWEATHER_API_KEY

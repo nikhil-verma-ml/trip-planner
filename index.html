@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VoyageAI — Your Intelligent Trip Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
+
+<style>
+/* ── Reset & base ───────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink:     #1A1612;
+  --sand:    #F5F0E8;
+  --warm:    #EDE5D5;
+  --rust:    #C2471A;
+  --gold:    #B8860B;
+  --teal:    #1B4D5C;
+  --mist:    #6B7B7E;
+  --line:    rgba(26,22,18,.12);
+  --serif:   'Cormorant Garamond', Georgia, serif;
+  --sans:    'DM Sans', sans-serif;
+  --radius:  4px;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--sans);
+  background: var(--sand);
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Grain texture overlay ──────────────────────────── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 999; opacity: .5;
+}
+
+/* ── Hero / header ──────────────────────────────────── */
+header {
+  position: relative;
+  background: var(--teal);
+  padding: 3rem 2rem 4rem;
+  overflow: hidden;
+  text-align: center;
+}
+
+header::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 120%, rgba(184,134,11,.18) 0%, transparent 70%);
+}
+
+.header-eyebrow {
+  font-family: var(--sans);
+  font-size: .7rem;
+  font-weight: 500;
+  letter-spacing: .18em;
+  color: rgba(245,240,232,.55);
+  text-transform: uppercase;
+  margin-bottom: .9rem;
+  animation: fadeUp .6s ease both;
+}
+
+header h1 {
+  font-family: var(--serif);
+  font-size: clamp(3rem, 8vw, 6rem);
+  font-weight: 300;
+  line-height: 1;
+  color: var(--sand);
+  letter-spacing: -.02em;
+  animation: fadeUp .7s .1s ease both;
+}
+
+header h1 em {
+  font-style: italic;
+  color: #D4A847;
+}
+
+header p.sub {
+  font-family: var(--sans);
+  font-size: .95rem;
+  font-weight: 300;
+  color: rgba(245,240,232,.65);
+  margin-top: 1rem;
+  line-height: 1.7;
+  animation: fadeUp .7s .2s ease both;
+}
+
+.agent-strip {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-top: 2rem;
+  animation: fadeUp .7s .35s ease both;
+}
+.agent-strip span {
+  font-size: .7rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: .3rem .8rem;
+  border: 1px solid rgba(245,240,232,.2);
+  color: rgba(245,240,232,.55);
+  border-radius: 20px;
+  font-family: var(--sans);
+}
+
+/* ── Layout ─────────────────────────────────────────── */
+main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 6rem;
+}
+
+section { margin-bottom: 3rem; }
+
+.section-title {
+  font-family: var(--serif);
+  font-size: 1.6rem;
+  font-weight: 400;
+  color: var(--teal);
+  margin-bottom: 1.5rem;
+  padding-bottom: .6rem;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: baseline;
+  gap: .75rem;
+}
+.section-title sup {
+  font-family: var(--sans);
+  font-size: .65rem;
+  font-weight: 500;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--mist);
+}
+
+/* ── Form grid ──────────────────────────────────────── */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+.form-grid .full { grid-column: 1 / -1; }
+
+.field { display: flex; flex-direction: column; gap: .4rem; }
+
+label {
+  font-size: .72rem;
+  font-weight: 500;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--mist);
+}
+
+input, select, textarea {
+  font-family: var(--sans);
+  font-size: .93rem;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: .65rem .85rem;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+  width: 100%;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(27,77,92,.08);
+}
+
+textarea { resize: vertical; min-height: 72px; }
+
+/* ── Mode toggle ────────────────────────────────────── */
+.mode-group {
+  display: flex;
+  gap: .5rem;
+}
+.mode-btn {
+  flex: 1;
+  padding: .65rem;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: .85rem;
+  color: var(--mist);
+  transition: all .18s;
+  text-align: center;
+  font-weight: 400;
+}
+.mode-btn.active {
+  background: var(--teal);
+  color: var(--sand);
+  border-color: var(--teal);
+  font-weight: 500;
+}
+
+/* ── Conditional sections ───────────────────────────── */
+.conditional { display: none; animation: fadeUp .3s ease; }
+.conditional.show { display: block; }
+
+/* ── Submit button ──────────────────────────────────── */
+.submit-wrap { text-align: center; margin-top: 2rem; }
+.btn-plan {
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: .02em;
+  color: var(--sand);
+  background: var(--rust);
+  border: none;
+  padding: .9rem 3rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background .2s, transform .15s;
+  position: relative;
+  overflow: hidden;
+}
+.btn-plan::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.08) 50%, transparent 70%);
+  transform: translateX(-100%);
+  transition: transform .4s;
+}
+.btn-plan:hover::after { transform: translateX(100%); }
+.btn-plan:hover { background: #A83A12; transform: translateY(-1px); }
+.btn-plan:active { transform: translateY(0); }
+.btn-plan:disabled { background: var(--mist); cursor: not-allowed; transform: none; }
+
+/* ── Pipeline progress ──────────────────────────────── */
+#pipeline-section { display: none; }
+#pipeline-section.show { display: block; }
+
+.pipeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+}
+
+.pipeline::before {
+  content: '';
+  position: absolute;
+  left: 19px; top: 24px; bottom: 24px;
+  width: 1px;
+  background: var(--line);
+}
+
+.pipe-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  padding: 1rem 0;
+  position: relative;
+  opacity: .35;
+  transition: opacity .4s;
+}
+.pipe-step.active { opacity: 1; }
+.pipe-step.done { opacity: .75; }
+
+.step-dot {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: var(--warm);
+  border: 1.5px solid var(--line);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 1rem;
+  transition: all .3s;
+  position: relative; z-index: 1;
+}
+.pipe-step.active .step-dot {
+  background: var(--teal);
+  border-color: var(--teal);
+  box-shadow: 0 0 0 5px rgba(27,77,92,.1);
+  animation: pulse 1.5s infinite;
+}
+.pipe-step.done .step-dot {
+  background: #2E7D5A;
+  border-color: #2E7D5A;
+}
+
+.step-info { flex: 1; padding-top: .45rem; }
+.step-name {
+  font-size: .93rem;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: .2rem;
+}
+.step-desc {
+  font-size: .8rem;
+  color: var(--mist);
+  font-weight: 300;
+}
+.step-api {
+  font-size: .7rem;
+  margin-top: .3rem;
+  color: var(--rust);
+  font-weight: 500;
+  letter-spacing: .06em;
+}
+
+.pipe-step.active .step-name { color: var(--teal); }
+.pipe-step.done .step-name { color: #2E7D5A; }
+
+/* spinning loader inside active dot */
+.dot-spinner {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(245,240,232,.3);
+  border-top-color: var(--sand);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  display: none;
+}
+.pipe-step.active .dot-spinner { display: block; }
+.pipe-step.active .dot-emoji { display: none; }
+.pipe-step.done .dot-emoji { display: none; }
+.pipe-step.done .dot-check { display: block !important; }
+
+.dot-check { display: none; color: #fff; font-size: 1rem; }
+
+/* ── Output section ─────────────────────────────────── */
+#output-section { display: none; }
+#output-section.show { display: block; }
+
+.output-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.output-header {
+  background: var(--teal);
+  padding: 1.25rem 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.output-header h3 {
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--sand);
+}
+.copy-btn {
+  font-family: var(--sans);
+  font-size: .75rem;
+  font-weight: 500;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: rgba(245,240,232,.7);
+  background: rgba(245,240,232,.1);
+  border: 1px solid rgba(245,240,232,.2);
+  padding: .4rem .9rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all .18s;
+}
+.copy-btn:hover { background: rgba(245,240,232,.18); color: var(--sand); }
+
+.output-body {
+  padding: 2rem 1.75rem;
+  font-size: .93rem;
+  line-height: 1.8;
+  color: var(--ink);
+  white-space: pre-wrap;
+  font-family: var(--sans);
+  font-weight: 300;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+/* rendered markdown inside output */
+.output-body h1, .output-body h2 {
+  font-family: var(--serif);
+  font-weight: 400;
+  color: var(--teal);
+  margin: 1.5rem 0 .5rem;
+  font-size: 1.5rem;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: .4rem;
+}
+.output-body h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  color: var(--rust);
+  margin: 1.2rem 0 .4rem;
+  font-size: 1.1rem;
+}
+.output-body ul, .output-body ol {
+  padding-left: 1.25rem;
+  margin: .5rem 0;
+}
+.output-body li { margin-bottom: .3rem; }
+.output-body strong { font-weight: 500; color: var(--ink); }
+.output-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: .87rem;
+}
+.output-body th {
+  background: var(--warm);
+  text-align: left;
+  padding: .5rem .75rem;
+  font-weight: 500;
+  font-size: .75rem;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--mist);
+}
+.output-body td {
+  padding: .5rem .75rem;
+  border-bottom: 1px solid var(--line);
+}
+
+/* ── Download bar ───────────────────────────────────── */
+.download-bar {
+  padding: 1rem 1.75rem;
+  border-top: 1px solid var(--line);
+  background: var(--warm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .75rem;
+}
+.download-bar span {
+  font-size: .8rem;
+  color: var(--mist);
+}
+.dl-btn {
+  font-family: var(--sans);
+  font-size: .8rem;
+  font-weight: 500;
+  color: var(--teal);
+  background: #fff;
+  border: 1px solid var(--teal);
+  padding: .45rem 1.1rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-decoration: none;
+  transition: all .18s;
+  display: inline-block;
+}
+.dl-btn:hover { background: var(--teal); color: var(--sand); }
+
+/* ── Error banner ───────────────────────────────────── */
+.error-banner {
+  background: #FDF0ED;
+  border: 1px solid #E8C5B8;
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  font-size: .88rem;
+  color: var(--rust);
+  display: none;
+}
+.error-banner.show { display: block; }
+
+/* ── Decorative rule ────────────────────────────────── */
+.ornament {
+  text-align: center;
+  color: var(--mist);
+  font-size: 1rem;
+  letter-spacing: .6em;
+  margin: 2rem 0;
+  opacity: .4;
+}
+
+/* ── Footer ─────────────────────────────────────────── */
+footer {
+  text-align: center;
+  padding: 2rem;
+  font-size: .75rem;
+  color: var(--mist);
+  border-top: 1px solid var(--line);
+  font-weight: 300;
+}
+footer a { color: var(--teal); text-decoration: none; }
+
+/* ── Animations ─────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(27,77,92,.1); }
+  50%       { box-shadow: 0 0 0 8px rgba(27,77,92,.04); }
+}
+
+/* ── Responsive ─────────────────────────────────────── */
+@media (max-width: 620px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .form-grid .full { grid-column: 1; }
+  header h1 { font-size: 2.8rem; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ══ HEADER ═══════════════════════════════════════════════════════ -->
+<header>
+  <p class="header-eyebrow">6-Agent CrewAI Pipeline · Free APIs</p>
+  <h1>Voyage<em>AI</em></h1>
+  <p class="sub">Tell us your dream destination.<br/>Our agents handle the rest — tickets, hotels, weather, itinerary &amp; budget.</p>
+  <div class="agent-strip">
+    <span>Researcher</span>
+    <span>Weather</span>
+    <span>Hotels</span>
+    <span>Tickets</span>
+    <span>Itinerary</span>
+    <span>Budget</span>
+  </div>
+</header>
+
+<!-- ══ MAIN ════════════════════════════════════════════════════════ -->
+<main>
+
+  <!-- ── Error banner ── -->
+  <div class="error-banner" id="errorBanner"></div>
+
+  <!-- ════════════════════════ FORM SECTION ════════════════════════ -->
+  <section id="formSection">
+    <h2 class="section-title">Plan Your Trip <sup>step 01</sup></h2>
+
+    <div class="form-grid">
+
+      <!-- Destination -->
+      <div class="field full">
+        <label for="destination">Destination</label>
+        <input id="destination" type="text" placeholder="e.g. Paris, France or Rajasthan, India" value="Paris, France" />
+      </div>
+
+      <!-- Origin -->
+      <div class="field">
+        <label for="originCity">Departing from</label>
+        <input id="originCity" type="text" placeholder="e.g. New Delhi" value="New Delhi" />
+      </div>
+
+      <!-- Travel dates -->
+      <div class="field">
+        <label for="travelDates">Travel dates</label>
+        <input id="travelDates" type="text" placeholder="e.g. 15 Sep 2025 – 22 Sep 2025" value="15 Sep 2025 – 22 Sep 2025" />
+      </div>
+
+      <!-- Travellers + Budget -->
+      <div class="field">
+        <label for="numTravellers">Number of travellers</label>
+        <input id="numTravellers" type="number" min="1" max="20" value="2" />
+      </div>
+
+      <div class="field">
+        <label for="budget">Total budget (₹ INR)</label>
+        <input id="budget" type="number" min="5000" step="1000" value="150000" placeholder="e.g. 150000" />
+      </div>
+
+      <!-- Interests -->
+      <div class="field full">
+        <label for="interests">Interests &amp; preferences</label>
+        <textarea id="interests" placeholder="e.g. history, street food, art galleries, nature hikes, local markets…">history, street food, art galleries, local markets</textarea>
+      </div>
+
+      <!-- Travel mode -->
+      <div class="field full">
+        <label>Travel mode</label>
+        <div class="mode-group">
+          <button class="mode-btn active" data-mode="flight" onclick="setMode('flight')">✈ Flight</button>
+          <button class="mode-btn" data-mode="train" onclick="setMode('train')">🚆 Train</button>
+          <button class="mode-btn" data-mode="both" onclick="setMode('both')">✈ + 🚆 Both</button>
+        </div>
+      </div>
+
+      <!-- Flight fields -->
+      <div class="conditional full" id="flightFields">
+        <div class="form-grid" style="margin-top:.25rem;">
+          <div class="field">
+            <label for="originIata">Origin airport (IATA)</label>
+            <input id="originIata" type="text" placeholder="DEL" maxlength="3" value="DEL" style="text-transform:uppercase" />
+          </div>
+          <div class="field">
+            <label for="destIata">Destination airport (IATA)</label>
+            <input id="destIata" type="text" placeholder="CDG" maxlength="3" value="CDG" style="text-transform:uppercase" />
+          </div>
+          <div class="field full">
+            <label for="depDate">Departure date</label>
+            <input id="depDate" type="date" value="2025-09-15" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Train fields -->
+      <div class="conditional full" id="trainFields">
+        <div class="form-grid" style="margin-top:.25rem;">
+          <div class="field">
+            <label for="originStation">Origin station code</label>
+            <input id="originStation" type="text" placeholder="NDLS" value="NDLS" style="text-transform:uppercase" />
+          </div>
+          <div class="field">
+            <label for="destStation">Destination station code</label>
+            <input id="destStation" type="text" placeholder="BCT" value="BCT" style="text-transform:uppercase" />
+          </div>
+          <div class="field full">
+            <label for="trainDate">Travel date</label>
+            <input id="trainDate" type="date" value="2025-09-15" />
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /form-grid -->
+
+    <div class="submit-wrap">
+      <button class="btn-plan" id="planBtn" onclick="startPlanning()">
+        Plan my trip →
+      </button>
+    </div>
+  </section>
+
+  <div class="ornament">· · ·</div>
+
+  <!-- ════════════════════ PIPELINE SECTION ════════════════════════ -->
+  <section id="pipeline-section">
+    <h2 class="section-title">Agents at Work <sup>step 02</sup></h2>
+
+    <div class="pipeline" id="pipeline">
+
+      <div class="pipe-step" id="step-0">
+        <div class="step-dot">
+          <span class="dot-emoji">🗺</span>
+          <div class="dot-spinner"></div>
+          <span class="dot-check">✓</span>
+        </div>
+        <div class="step-info">
+          <div class="step-name">Destination Researcher</div>
+          <div class="step-desc">Searching attractions, visa info, local tips &amp; hidden gems</div>
+          <div class="step-api">Serper API · Gemini</div>
+        </div>
+      </div>
+
+      <div class="pipe-step" id="step-1">
+        <div class="step-dot">
+          <span class="dot-emoji">🌤</span>
+          <div class="dot-spinner"></div>
+          <span class="dot-check">✓</span>
+        </div>
+        <div class="step-info">
+          <div class="step-name">Weather Checker</div>
+          <div class="step-desc">Fetching 5-day forecast &amp; building packing advice</div>
+          <div class="step-api">OpenWeather API · Gemini</div>
+        </div>
+      </div>
+
+      <div class="pipe-step" id="step-2">
+        <div class="step-dot">
+          <span class="dot-emoji">🏨</span>
+          <div class="dot-spinner"></div>
+          <span class="dot-check">✓</span>
+        </div>
+        <div class="step-info">
+          <div class="step-name">Hotel Finder</div>
+          <div class="step-desc">Scanning best stays within your budget &amp; shortlisting top 3</div>
+          <div class="step-api">Serper API · Gemini</div>
+        </div>
+      </div>
+
+      <div class="pipe-step" id="step-3">
+        <div class="step-dot">
+          <span class="dot-emoji" id="ticketEmoji">✈</span>
+          <div class="dot-spinner"></div>
+          <span class="dot-check">✓</span>
+        </div>
+        <div class="step-info">
+          <div class="step-name">Ticket Price Finder</div>
+          <div class="step-desc" id="ticketDesc">Comparing cheapest flights for your route &amp; dates</div>
+          <div class="step-api" id="ticketApi">Amadeus API · Gemini</div>
+        </div>
+      </div>
+
+      <div class="pipe-step" id="step-4">
+        <div class="step-dot">
+          <span class="dot-emoji">📅</span>
+          <div class="dot-spinner"></div>
+          <span class="dot-check">✓</span>
+        </div>
+        <div class="step-info">
+          <div class="step-name">Itinerary Planner</div>
+          <div class="step-desc">Building your day-by-day schedule with timings &amp; meal ideas</div>
+          <div class="step-api">Gemini</div>
+        </div>
+      </div>
+
+      <div class="pipe-step" id="step-5">
+        <div class="step-dot">
+          <span class="dot-emoji">💰</span>
+          <div class="dot-spinner"></div>
+          <span class="dot-check">✓</span>
+        </div>
+        <div class="step-info">
+          <div class="step-name">Budget Estimator</div>
+          <div class="step-desc">Calculating per-day, per-person &amp; grand total costs</div>
+          <div class="step-api">Gemini</div>
+        </div>
+      </div>
+
+    </div><!-- /pipeline -->
+  </section>
+
+  <!-- ════════════════════ OUTPUT SECTION ══════════════════════════ -->
+  <section id="output-section">
+    <h2 class="section-title">Your Travel Guide <sup>step 03</sup></h2>
+
+    <div class="output-card">
+      <div class="output-header">
+        <h3 id="outputTitle">Travel Guide</h3>
+        <button class="copy-btn" onclick="copyOutput()">Copy</button>
+      </div>
+      <div class="output-body" id="outputBody"></div>
+      <div class="download-bar">
+        <span>Your personalised travel guide is ready.</span>
+        <a class="dl-btn" id="downloadBtn" download="travel_guide.md">⬇ Download .md</a>
+      </div>
+    </div>
+
+    <div class="submit-wrap" style="margin-top:2rem;">
+      <button class="btn-plan" onclick="resetForm()">Plan another trip →</button>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  VoyageAI &mdash; Built with <a href="https://crewai.com" target="_blank">CrewAI</a>,
+  <a href="https://aistudio.google.com" target="_blank">Gemini</a>,
+  <a href="https://serper.dev" target="_blank">Serper</a>,
+  <a href="https://openweathermap.org" target="_blank">OpenWeather</a>,
+  <a href="https://developers.amadeus.com" target="_blank">Amadeus</a> &amp;
+  <a href="https://rapidapi.com" target="_blank">RapidAPI</a>
+  &mdash; All free tiers.
+</footer>
+
+<!-- ══ SCRIPTS ══════════════════════════════════════════════════════ -->
+<script>
+/* ── Config ────────────────────────────────────────── */
+const API_BASE = 'http://localhost:5000'; // Change to your deployed backend URL
+
+/* ── State ─────────────────────────────────────────── */
+let currentMode = 'flight';
+let pollInterval = null;
+let currentStep = -1;
+
+// Simulated step durations (ms) for demo progress when backend unavailable
+const STEP_DURATION = [28000, 18000, 22000, 25000, 30000, 20000];
+
+/* ── Mode toggle ────────────────────────────────────── */
+function setMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+  });
+
+  const showFlight = mode === 'flight' || mode === 'both';
+  const showTrain  = mode === 'train'  || mode === 'both';
+
+  document.getElementById('flightFields').classList.toggle('show', showFlight);
+  document.getElementById('trainFields').classList.toggle('show',  showTrain);
+
+  // Update ticket step label
+  const emoji = { flight: '✈', train: '🚆', both: '✈🚆' }[mode];
+  const desc  = {
+    flight: 'Comparing cheapest flights for your route & dates',
+    train:  'Searching best train options & fare classes',
+    both:   'Comparing both flights and trains for best value',
+  }[mode];
+  const api   = {
+    flight: 'Amadeus API · Gemini',
+    train:  'RailwayAPI (RapidAPI) · Gemini',
+    both:   'Amadeus + RailwayAPI · Gemini',
+  }[mode];
+
+  document.getElementById('ticketEmoji').textContent = emoji;
+  document.getElementById('ticketDesc').textContent  = desc;
+  document.getElementById('ticketApi').textContent   = api;
+}
+
+/* ── Collect form data ──────────────────────────────── */
+function getFormData() {
+  const depDate = document.getElementById('depDate').value.replace(/-/g, '');
+  const trainDate = document.getElementById('trainDate').value.replace(/-/g, '');
+  const dateYmd = currentMode === 'train' ? trainDate : depDate;
+
+  return {
+    destination:    document.getElementById('destination').value.trim(),
+    origin_city:    document.getElementById('originCity').value.trim(),
+    travel_dates:   document.getElementById('travelDates').value.trim(),
+    num_travellers: parseInt(document.getElementById('numTravellers').value) || 2,
+    budget_inr:     parseInt(document.getElementById('budget').value) || 150000,
+    interests:      document.getElementById('interests').value.trim(),
+    travel_mode:    currentMode,
+    origin_iata:    document.getElementById('originIata').value.toUpperCase(),
+    dest_iata:      document.getElementById('destIata').value.toUpperCase(),
+    origin_station: document.getElementById('originStation').value.toUpperCase(),
+    dest_station:   document.getElementById('destStation').value.toUpperCase(),
+    date_yyyymmdd:  dateYmd || new Date().toISOString().slice(0,10).replace(/-/g,''),
+  };
+}
+
+/* ── Validate ───────────────────────────────────────── */
+function validate(data) {
+  if (!data.destination) return 'Please enter a destination.';
+  if (!data.origin_city)  return 'Please enter your departure city.';
+  if (!data.travel_dates) return 'Please enter your travel dates.';
+  return null;
+}
+
+/* ── Pipeline step helpers ──────────────────────────── */
+function activateStep(i) {
+  if (i === currentStep) return;
+  if (currentStep >= 0) {
+    document.getElementById(`step-${currentStep}`).classList.remove('active');
+    document.getElementById(`step-${currentStep}`).classList.add('done');
+  }
+  currentStep = i;
+  const el = document.getElementById(`step-${i}`);
+  el.classList.remove('done');
+  el.classList.add('active');
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function finishAllSteps() {
+  for (let i = 0; i <= 5; i++) {
+    const el = document.getElementById(`step-${i}`);
+    el.classList.remove('active');
+    el.classList.add('done');
+    el.style.opacity = '0.75';
+  }
+  currentStep = -1;
+}
+
+/* ── Simulated step progression (when using real backend, progress is estimated) */
+function startSimulatedProgress() {
+  let step = 0;
+  activateStep(step);
+
+  function advance() {
+    if (step >= 5) return;
+    step++;
+    activateStep(step);
+    if (step < 5) {
+      setTimeout(advance, STEP_DURATION[step]);
+    }
+  }
+  setTimeout(advance, STEP_DURATION[0]);
+}
+
+/* ── Show output ────────────────────────────────────── */
+function showOutput(destination, text) {
+  finishAllSteps();
+  document.getElementById('pipeline-section').classList.remove('show');
+  document.getElementById('pipeline-section').style.display = 'none';
+
+  document.getElementById('outputTitle').textContent = `Travel Guide — ${destination}`;
+
+  // Render markdown-ish formatting
+  const rendered = text
+    .replace(/^# (.+)$/gm,  '<h1>$1</h1>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,   '<em>$1</em>')
+    .replace(/\n/g, '<br/>');
+
+  document.getElementById('outputBody').innerHTML = rendered;
+
+  // Download link
+  const blob = new Blob([text], { type: 'text/markdown' });
+  const url  = URL.createObjectURL(blob);
+  const dl   = document.getElementById('downloadBtn');
+  dl.href = url;
+  dl.download = `travel_guide_${destination.replace(/[^a-z0-9]/gi,'_').toLowerCase()}.md`;
+
+  document.getElementById('output-section').classList.add('show');
+  document.getElementById('output-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+/* ── Main: Start planning ───────────────────────────── */
+async function startPlanning() {
+  hideError();
+  const data = getFormData();
+  const err  = validate(data);
+  if (err) { showError(err); return; }
+
+  // UI transitions
+  document.getElementById('planBtn').disabled = true;
+  document.getElementById('planBtn').textContent = 'Planning…';
+  document.getElementById('formSection').style.opacity = '.5';
+  document.getElementById('formSection').style.pointerEvents = 'none';
+
+  document.getElementById('pipeline-section').classList.add('show');
+  document.getElementById('pipeline-section').style.display = 'block';
+  document.getElementById('pipeline-section').scrollIntoView({ behavior: 'smooth' });
+
+  currentStep = -1;
+  // Reset all steps
+  for (let i = 0; i <= 5; i++) {
+    const el = document.getElementById(`step-${i}`);
+    el.classList.remove('active', 'done');
+    el.style.opacity = '';
+  }
+
+  try {
+    // Try real backend
+    const resp = await fetch(`${API_BASE}/api/plan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      signal: AbortSignal.timeout(8000),
+    });
+
+    if (!resp.ok) throw new Error('Backend error');
+
+    const { job_id } = await resp.json();
+    startSimulatedProgress();
+    pollJob(job_id, data.destination);
+
+  } catch (e) {
+    // Backend unreachable — run demo mode
+    console.warn('Backend not reachable, running demo mode:', e.message);
+    runDemoMode(data.destination);
+  }
+}
+
+/* ── Poll job status ────────────────────────────────── */
+function pollJob(jobId, destination) {
+  pollInterval = setInterval(async () => {
+    try {
+      const resp = await fetch(`${API_BASE}/api/status/${jobId}`);
+      const job  = await resp.json();
+
+      if (job.status === 'done') {
+        clearInterval(pollInterval);
+        showOutput(destination, job.result);
+      } else if (job.status === 'error') {
+        clearInterval(pollInterval);
+        showError('Pipeline error: ' + job.error);
+        resetUI();
+      }
+    } catch (e) {
+      clearInterval(pollInterval);
+      showError('Lost connection to backend.');
+      resetUI();
+    }
+  }, 4000);
+}
+
+/* ── Demo mode (no backend needed) ─────────────────── */
+function runDemoMode(destination) {
+  startSimulatedProgress();
+  const totalTime = STEP_DURATION.reduce((a, b) => a + b, 0) + 2000;
+
+  setTimeout(() => {
+    const demoResult = generateDemoOutput(destination);
+    showOutput(destination, demoResult);
+    document.getElementById('formSection').style.opacity = '1';
+    document.getElementById('formSection').style.pointerEvents = 'auto';
+    document.getElementById('planBtn').disabled = false;
+    document.getElementById('planBtn').textContent = 'Plan my trip →';
+  }, totalTime);
+}
+
+function generateDemoOutput(dest) {
+  return `# AI Travel Guide — ${dest}
+
+## Destination Overview
+${dest} is a world-class destination offering a rich blend of history, culture, and modern life. Known for its iconic landmarks, vibrant street life, and extraordinary cuisine, it draws millions of visitors every year.
+
+**Top Attractions:**
+- The historic old city quarter — a UNESCO World Heritage area
+- The Grand Museum — housing thousands of artefacts spanning millennia
+- The Central Market — best visited early morning for authentic local experience
+- The Scenic Promenade — perfect for evening walks
+- The Art District — galleries, murals, and independent cafés
+
+**Local Cuisine to Try:**
+- Traditional breakfast platter at a local dhaba/café
+- Street food tour through the old bazaar
+- Fine dining at a rooftop restaurant with a city view
+
+---
+
+## Weather Forecast (Travel Dates)
+
+| Date | Condition | Temp Range | Humidity |
+|------|-----------|-----------|---------|
+| Day 1 | Partly Cloudy | 22°C – 31°C | 65% |
+| Day 2 | Sunny | 24°C – 33°C | 58% |
+| Day 3 | Sunny | 23°C – 32°C | 60% |
+| Day 4 | Light Showers | 20°C – 28°C | 75% |
+| Day 5 | Clear | 22°C – 30°C | 62% |
+
+**Packing Checklist:** Light cotton clothing · Sunscreen SPF 50+ · Umbrella/rain jacket · Comfortable walking shoes · Power bank · Travel adapter
+
+---
+
+## Hotel Recommendations
+
+**1. ⭐⭐⭐⭐ The Heritage Grand** — Old City Quarter
+- ₹4,800/night · Rating: 9.1/10
+- Rooftop restaurant, heritage architecture, free breakfast included
+- Book on: Booking.com
+
+**2. ⭐⭐⭐ The Urban Nest** — Central District
+- ₹2,900/night · Rating: 8.6/10
+- Modern amenities, walking distance to main attractions, fast WiFi
+- Book on: MakeMyTrip
+
+**3. ⭐⭐⭐ Comfort Inn Plus** — Near Airport Metro
+- ₹1,850/night · Rating: 8.2/10
+- Budget-friendly, excellent transport links, airport shuttle
+- Book on: Hotels.com
+
+**Recommended:** The Urban Nest — best balance of location, comfort, and price.
+
+---
+
+## Best Flight / Train Deals
+
+**✈ Top Flight Options:**
+1. AI 502 | DEL → CDG | Dep 02:15 → Arr 07:40 | 9h 25min | Non-stop | ₹32,400
+2. EK 510 | DEL → CDG | via Dubai | 12h 10min | 1 stop | ₹28,900
+3. QR 774 | DEL → CDG | via Doha | 13h 45min | 1 stop | ₹27,200
+
+**Best Pick:** EK 510 — great value with only 1 stop and reputable airline.
+
+---
+
+## Day-by-Day Itinerary
+
+### Day 1 — Arrival & First Impressions
+🌅 **Morning:** Land, clear customs, check into hotel (~2 hrs). Freshen up and walk the neighbourhood.
+☀ **Afternoon:** Lunch at a local café near hotel. Visit the Central Market — explore stalls, pick up spices and souvenirs.
+🌙 **Evening:** Rooftop dinner at The Heritage Grand restaurant. Early night — recover from travel.
+
+### Day 2 — History & Culture
+🌅 **Morning:** Visit the Grand Museum (open 9am–6pm). Spend 2.5–3 hours.
+☀ **Afternoon:** Street food lunch in the old bazaar. Explore the Art District galleries.
+🌙 **Evening:** Sunset walk along the Scenic Promenade. Dinner at a highly-rated local restaurant.
+
+### Day 3 — Hidden Gems
+🌅 **Morning:** Day trip to the countryside / nearby village — hire a local guide.
+☀ **Afternoon:** Picnic lunch. Visit a traditional craft workshop.
+🌙 **Evening:** Return to city. Cooking class — learn a local recipe.
+
+### Day 4 — Leisure & Shopping
+🌅 **Morning:** Slow morning at a café. Visit weekend flea market.
+☀ **Afternoon:** Shopping for local textiles, ceramics, and art.
+🌙 **Evening:** Farewell dinner at a fine-dining rooftop restaurant.
+
+### Day 5 — Departure
+🌅 **Morning:** Final breakfast at hotel. Check out.
+☀ **Afternoon:** Last-minute sightseeing or airport lounge.
+🌙 **Evening:** Depart. Safe travels!
+
+---
+
+## Budget Breakdown
+
+| Category | Cost (₹) |
+|----------|---------|
+| Flights (×2 pax) | 57,800 |
+| Hotel (5 nights) | 29,000 |
+| Food & Dining | 18,000 |
+| Local Transport | 6,500 |
+| Entry Tickets | 4,200 |
+| Shopping Buffer | 8,000 |
+| Subtotal | 1,23,500 |
+| Contingency (10%) | 12,350 |
+| **Grand Total** | **₹1,35,850** |
+
+**Budget Status:** ✅ Within budget (₹1,50,000 stated) — ₹14,150 remaining as buffer.
+
+**Money-saving tips:**
+- Book flights at least 6 weeks in advance for 20–30% savings
+- Use local metro instead of taxis to cut transport costs by half
+- Visit museums on free-entry days (usually first Sunday of month)`;
+}
+
+/* ── Copy output ────────────────────────────────────── */
+function copyOutput() {
+  const text = document.getElementById('outputBody').innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+
+/* ── Error helpers ──────────────────────────────────── */
+function showError(msg) {
+  const el = document.getElementById('errorBanner');
+  el.textContent = '⚠ ' + msg;
+  el.classList.add('show');
+  el.scrollIntoView({ behavior: 'smooth' });
+}
+function hideError() {
+  document.getElementById('errorBanner').classList.remove('show');
+}
+
+/* ── Reset ──────────────────────────────────────────── */
+function resetUI() {
+  document.getElementById('planBtn').disabled = false;
+  document.getElementById('planBtn').textContent = 'Plan my trip →';
+  document.getElementById('formSection').style.opacity = '1';
+  document.getElementById('formSection').style.pointerEvents = 'auto';
+}
+
+function resetForm() {
+  resetUI();
+  document.getElementById('pipeline-section').style.display = 'none';
+  document.getElementById('output-section').classList.remove('show');
+  currentStep = -1;
+  for (let i = 0; i <= 5; i++) {
+    const el = document.getElementById(`step-${i}`);
+    el.classList.remove('active', 'done');
+    el.style.opacity = '';
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ── Init ───────────────────────────────────────────── */
+setMode('flight');
+</script>
+
+</body>
+</html>

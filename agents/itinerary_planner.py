@@ -1,32 +1,24 @@
 from crewai import Agent
 
-
 def itinerary_planner_agent(llm) -> Agent:
     """
-    Synthesises all previous agent outputs (destination info, weather,
-    hotels, tickets) into a structured day-by-day travel itinerary.
+    Synthesises all previous agent outputs into a structured day-by-day travel itinerary.
     """
     return Agent(
         role="Professional Travel Itinerary Architect",
         goal=(
-            "Using the destination research, weather forecast, hotel options, "
-            "and ticket information provided by the other agents, create a "
-            "detailed day-by-day travel itinerary. Each day must include morning, "
-            "afternoon, and evening activities with estimated travel times between "
-            "places, meal suggestions, and practical tips. Factor in check-in/check-out, "
-            "transport schedule, and weather conditions."
+            "Create a detailed day-by-day travel itinerary based on previous research. "
+            "CRITICAL: Your entire response MUST start EXACTLY with the heading: '## Day-by-Day Itinerary'. "
+            "Do NOT write any introduction like 'Here is your itinerary...'. "
+            "Format each day strictly as '## Day 1: [Title]', '## Day 2: [Title]', etc."
         ),
         backstory=(
-            "You are a professional tour designer who has crafted personalised "
-            "itineraries for thousands of travellers across every continent. "
-            "You have the rare ability to balance sightseeing, rest, food, and "
-            "culture into a perfectly paced schedule that doesn't feel rushed. "
-            "You also account for local timings — museum hours, rush hours, and "
-            "seasonal events — to maximise every minute of the trip."
+            "You are a strict tour designer. You follow markdown formatting rules flawlessly. "
+            "You never add fluffy introductory text. You only use the exact requested markdown headings."
         ),
         tools=[],
         llm=llm,
         verbose=True,
         allow_delegation=False,
-        max_iter=4,
+        max_iter=3, # Reduced to make it faster
     )

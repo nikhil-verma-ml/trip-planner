@@ -1,144 +1,99 @@
 import os
 import sys
 import logging
+import pathlib
+import time
+
 log = logging.getLogger(__name__)
 
-# ── Force local folders first in path ────────────────────────────────────────
-# Fixes: "cannot import name 'X' from 'agents' (unknown location)"
-# An installed package (crewai/langchain) ships a module also named 'agents',
-# which shadows our local agents/ folder unless we prepend the project root.
 _BASE = os.path.dirname(os.path.abspath(__file__))
 if _BASE not in sys.path:
     sys.path.insert(0, _BASE)
 
-# Now safe to import — Python resolves _BASE/agents/ first
-from crewai import Crew, Process, LLM
+from crewai import Agent, Task, Crew, Process, LLM
 from agents.destination_researcher import destination_researcher_agent
 from agents.weather_checker        import weather_checker_agent
 from agents.hotel_finder           import hotel_finder_agent
 from agents.ticket_finder          import ticket_finder_agent
 from agents.itinerary_planner      import itinerary_planner_agent
 from agents.budget_estimator       import budget_estimator_agent
-from tasks.trip_tasks import create_all_tasks
+from tasks.trip_tasks              import create_all_tasks
 
 
-# ── Groq model priority list ─────────────────────────────────────────────────
-# Ordered best → fallback. Auto-detection skips decommissioned models at runtime.
-GROQ_MODEL_PRIORITY = [
-    "llama-3.3-70b-versatile",   # best quality
-    "llama-3.1-70b-versatile",   # fallback quality
-    "llama-3.1-8b-instant",      # fast, lower TPM
-    "llama3-8b-8192",            # legacy fallback
-    "llama3-70b-8192",           # legacy fallback
-]
+def get_gemini():
+    k = os.getenv("GEMINI_API_KEY", "")
+    if not k.startswith("AIza"):
+        log.warning("GEMINI_API_KEY invalid or missing — skipping")
+        return None
+    return LLM(model="gemini/gemini-2.0-flash", api_key=k, temperature=0.7)
 
 
-def _pick_groq_model(api_key: str) -> str:
+def get_groq():
+    k = os.getenv("GROQ_API_KEY", "")
+    if not k.startswith("gsk_"):
+        log.warning("GROQ_API_KEY invalid or missing — skipping")
+        return None
+    return LLM(model="groq/llama-3.3-70b-versatile", api_key=k, temperature=0.7)
+
+
+def safe_execute(task: Task, agent: Agent, primary: LLM, fallback: LLM):
     """
-    Query Groq /v1/models and return the first available model
-    from GROQ_MODEL_PRIORITY. Falls back to first in list if API call fails.
-    This means model deprecations are handled automatically at runtime.
+    Try primary LLM → fallback LLM → wait 60s → retry fallback.
+    Groq is primary (reliable), Gemini is fallback (quota limited).
     """
-    try:
-        import requests as _req
-        resp = _req.get(
-            "https://api.groq.com/openai/v1/models",
-            headers={"Authorization": f"Bearer {api_key}"},
-            timeout=8,
-        )
-        if resp.status_code == 200:
-            live_ids = {m["id"] for m in resp.json().get("data", [])}
-            log.info(f"Groq live models: {sorted(live_ids)}")
-            for candidate in GROQ_MODEL_PRIORITY:
-                if candidate in live_ids:
-                    log.info(f"Selected Groq model: {candidate}")
-                    return candidate
-            # None of our list matched — use whatever is available
-            if live_ids:
-                chosen = sorted(live_ids)[0]
-                log.warning(f"No priority model found, using: {chosen}")
-                return chosen
-    except Exception as e:
-        log.warning(f"Could not fetch Groq model list: {e}")
+    for llm, label in [(primary, "Primary"), (fallback, "Fallback")]:
+        if llm is None:
+            continue
+        try:
+            agent.llm = llm
+            result = task.execute_sync()
+            task.output = result
+            log.info(f"{label} ({llm.model}) succeeded.")
+            return
+        except Exception as e:
+            log.warning(f"{label} ({llm.model}) failed: {str(e)[:80]}")
 
-    # Hard fallback — use first in priority list
-    return GROQ_MODEL_PRIORITY[0]
-
-
-def build_llm() -> LLM:
-    """
-    Build the LLM with self-healing model selection:
-      1. Groq  — queries live model list, skips decommissioned models automatically
-      2. Gemini — fallback if no GROQ_API_KEY
-    """
-    groq_key   = os.getenv("GROQ_API_KEY")
-    gemini_key = os.getenv("GEMINI_API_KEY")
-
-    if groq_key:
-        model_name = _pick_groq_model(groq_key)
-        log.info(f"LLM: Using groq/{model_name}")
-        return LLM(
-            model=f"groq/{model_name}",
-            api_key=groq_key,
-            temperature=0.7,
-        )
-    elif gemini_key:
-        log.info("LLM: Using gemini/gemini-2.0-flash (fallback)")
-        return LLM(
-            model="gemini/gemini-2.0-flash",
-            api_key=gemini_key,
-            temperature=0.7,
-        )
-    else:
-        raise ValueError(
-            "No LLM API key found. Set GROQ_API_KEY or GEMINI_API_KEY in .env"
-        )
+    # Both failed — wait and retry primary
+    log.info("Both LLMs failed. Waiting 60s and retrying...")
+    time.sleep(60)
+    agent.llm = primary
+    result = task.execute_sync()
+    task.output = result
 
 
 def run_trip_planner(trip_details: dict) -> str:
-    """
-    Build and kick off the 6-agent trip planner crew.
+    gemini = get_gemini()
+    groq   = get_groq()
 
-    Args:
-        trip_details : dict containing all trip parameters
-                       (see main.py for full schema)
+    # Groq = primary (500K TPD, reliable)
+    # Gemini = fallback (daily quota limited)
+    primary  = groq   or gemini
+    fallback = gemini if groq else None
 
-    Returns:
-        str — the final combined travel guide output
-    """
-    llm = build_llm()
+    if primary is None:
+        raise ValueError("No valid LLM found. Check GROQ_API_KEY and GEMINI_API_KEY in .env")
+
+    log.info(f"Primary: {primary.model} | Fallback: {fallback.model if fallback else 'None'}")
+
     travel_mode = trip_details.get("travel_mode", "flight")
 
-    # ── Instantiate all 6 agents ──────────────────────────────────────────────
     agents = {
-        "researcher": destination_researcher_agent(llm),
-        "weather":    weather_checker_agent(llm),
-        "hotels":     hotel_finder_agent(llm),
-        "tickets":    ticket_finder_agent(llm, travel_mode=travel_mode),
-        "planner":    itinerary_planner_agent(llm),
-        "budget":     budget_estimator_agent(llm),
+        "researcher": destination_researcher_agent(primary),
+        "weather":    weather_checker_agent(primary),
+        "hotels":     hotel_finder_agent(primary),
+        "tickets":    ticket_finder_agent(primary, travel_mode=travel_mode),
+        "planner":    itinerary_planner_agent(primary),
+        "budget":     budget_estimator_agent(primary),
     }
 
-    # ── Create all 6 tasks ────────────────────────────────────────────────────
     tasks = create_all_tasks(agents, trip_details)
+    pathlib.Path(os.path.join(_BASE, "output")).mkdir(parents=True, exist_ok=True)
 
-    # ── Assemble the Crew ─────────────────────────────────────────────────────
-    # ── Ensure output directory exists before crew starts ────────────────────
-    import pathlib
-    pathlib.Path("output").mkdir(parents=True, exist_ok=True)
+    log.info("Starting pipeline...")
 
-    crew = Crew(
-        agents=list(agents.values()),
-        tasks=tasks,
-        process=Process.sequential,
-        verbose=True,
-        memory=False,               # FIX: disable crew memory — reduces token bloat
-        max_rpm=3,                  # FIX: paced to stay under Groq 20k TPM free limit
-        output_log_file=os.path.join(_BASE, "output", "crew_log.txt"),
-    )
-
-    # ── Kick off and collect per-task outputs ─────────────────────────────────
-    crew.kickoff()
+    for i, task in enumerate(tasks):
+        log.info(f"Phase {i+1}/6...")
+        safe_execute(task, task.agent, primary, fallback)
 
     sections = [
         ("Destination Research",  tasks[0]),
@@ -148,10 +103,11 @@ def run_trip_planner(trip_details: dict) -> str:
         ("Day-by-Day Itinerary",  tasks[4]),
         ("Budget Breakdown",      tasks[5]),
     ]
+
     parts = []
     for title, task in sections:
         out = str(task.output).strip() if hasattr(task, "output") and task.output else ""
         if out:
             parts.append(f"## {title}\n\n{out}")
 
-    return "\n\n---\n\n".join(parts) if parts else "Pipeline completed — check output/crew_log.txt"
+    return "\n\n---\n\n".join(parts) if parts else "Pipeline completed."
