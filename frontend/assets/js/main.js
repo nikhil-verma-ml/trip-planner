@@ -2,8 +2,7 @@
  * Main Application Logic
  */
 
-// Configuration - Can be overridden by environment variable or window property
-const API_URL = window.API_URL || "http://localhost:8000";
+const API_URL = "https://trip-planner-backend-5v75.onrender.com";
 
 const elements = {
     form: document.getElementById('planner-form'),
@@ -33,6 +32,7 @@ elements.form.addEventListener('submit', async (e) => {
         travel_mode: document.querySelector('input[name="travel_mode"]:checked').value
     };
 
+    let wakeUpMessageTimer = null;
     try {
         // UI Transition
         elements.form.parentElement.classList.add('hidden');
@@ -40,12 +40,20 @@ elements.form.addEventListener('submit', async (e) => {
         PipelineUI.reset();
         PipelineUI.update(1);
 
+        wakeUpMessageTimer = setTimeout(() => {
+            const statusText = document.getElementById('status-text');
+            if (statusText) {
+                statusText.textContent = "Backend is waking up, please wait...";
+            }
+        }, 5000);
+
         // Start Planning
         const response = await fetch(`${API_URL}/api/plan`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
         });
+        clearTimeout(wakeUpMessageTimer);
 
         if (!response.ok) throw new Error("Failed to start planning");
 
@@ -56,6 +64,7 @@ elements.form.addEventListener('submit', async (e) => {
         startPolling();
 
     } catch (error) {
+        if (wakeUpMessageTimer) clearTimeout(wakeUpMessageTimer);
         alert("Error: " + error.message);
         resetUI();
     }
