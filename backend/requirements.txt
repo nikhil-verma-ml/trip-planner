@@ -1,16 +1,17 @@
-# ── Core web framework ────────────────────────────────────
-fastapi
-uvicorn
+# Core web framework
+fastapi==0.136.1
+uvicorn[standard]==0.46.0
 
-# ── CrewAI multi-agent framework ──────────────────────────
-crewai
-crewai-tools
+# CrewAI multi-agent framework
+crewai==1.14.4
+crewai-tools==1.14.4
 
-# ── LLM providers ─────────────────────────────────────────
-langchain-google-genai==2.0.7
-groq==0.13.0
+# LLM providers
+groq==1.2.0
+openai==2.30.0
 litellm==1.63.14
+langchain-google-genai==4.2.2
 
-# ── Utilities ─────────────────────────────────────────────
-python-dotenv==1.0.1
-requests==2.31.0
+# Utilities
+python-dotenv==1.2.2
+requests==2.33.1
